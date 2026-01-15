@@ -7,7 +7,7 @@ if [ $# -ne 2 ]; then
 fi
 
 DECODER="$1"
-ASM_DIR="$2"
+ASM_DIR=$(readlink -m $2)
 
 if [ ! -x "$DECODER" ]; then
     echo "Error: decoder not found or not executable: $DECODER"
@@ -18,6 +18,7 @@ if [ ! -d "$ASM_DIR" ]; then
     echo "Error: asm folder not found: $ASM_DIR"
     exit 1
 fi
+
 
 shopt -s nullglob
 
@@ -31,7 +32,10 @@ fi
 for ASM in "${ASM_FILES[@]}"; do
     echo "== Testing $ASM =="
 
-    if diff "$ASM" <(nasm -f bin "$ASM" -o /dev/stdout | "$DECODER"); then
+    touch "$ASM.bin"
+    nasm -f bin "$ASM" -o "$ASM.bin"
+
+    if diff "$ASM" <("$DECODER" "$ASM.bin"); then
         echo "SUCCESS"
     else
         echo "ERROR"

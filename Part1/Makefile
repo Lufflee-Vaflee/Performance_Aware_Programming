@@ -1,4 +1,4 @@
-CXXFLAGS = -std=c++23 -O2 -Wall -pedantic -fstrict-aliasing
+CXXFLAGS = -std=c++23 -Wall -pedantic -fstrict-aliasing -g
 
 ASM_FILES := $(wildcard test/*.asm)
 TEST_SCRIPT := ./test/test.sh
@@ -15,12 +15,13 @@ dir:
 build/8086sim: build/main.o
 	g++ -o build/8086sim build/main.o
 
-build/main.o:
+build/main.o: src/main.cpp
 	g++ -c $(CXXFLAGS) src/main.cpp -o build/main.o
 
-test:
-	./test/test.sh ./build/8086sim ./test/
+test: build
+	./test/test.sh ./build/8086sim ./test
 
 clean:
 	rm -rf build
+	rm -f ./test/*.bin
 

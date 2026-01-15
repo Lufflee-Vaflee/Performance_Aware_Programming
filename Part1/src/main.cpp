@@ -6,10 +6,109 @@
 #include <fstream>
 #include <algorithm>
 
+namespace OPCODE {
 
-enum class OPCODE : uint8_t {
-    MOVE_RM_R = 0b100010
+using string_repr_t = char[16];
+
+struct bit3mask {
+   private:
+    constexpr static bool valid_3bit(char c) {
+        return c == '0' || c == '1' || c == 'x';
+    }
+
+    constexpr static std::uint16_t generate_xor_mask(string_repr_t const& mask) {
+        uint16_t xor_mask = 0;
+        for(int i = 0; i < 16; ++i) {
+            if(mask[i] == '1') {
+                xor_mask += 1;
+            }
+            xor_mask <<= 1;
+        }
+
+        return xor_mask;
+    }
+
+    constexpr static std::uint16_t generate_and_mask(string_repr_t const& mask) {
+        uint16_t and_mask = 0;
+        for(int i = 0; i < 16; ++i) {
+            if(mask[i] != 'x') {
+                and_mask += 1;
+            }
+            and_mask <<= 1;
+        }
+
+        return and_mask;
+    }
+
+    constexpr void initialize_from_literal(string_repr_t const& mask) {
+        for(int i = 0; i < 16; ++i) {
+            if(!valid_3bit(mask[i])) {
+                throw "not valid 3bit";
+            }
+        }
+
+        xor_mask = generate_xor_mask(mask);
+        and_mask = generate_and_mask(mask);
+    }
+
+
+   public:
+    constexpr bit3mask(string_repr_t const& mask) {
+        initialize_from_literal(mask);
+    }
+
+    constexpr bit3mask(bit3mask const& mask) = default;
+
+    constexpr bit3mask& operator=(string_repr_t const& mask) {
+        initialize_from_literal(mask);
+        return *this;
+    }
+
+    constexpr bit3mask& operator=(bit3mask const& mask) = default;
+
+    /*
+    match illustration
+    1010 1100 1110 0000 input
+
+    1010 1xxx xxx0 00xx identifier
+          ||| |||    ||
+    1010 1000 0000 0000 xor mask
+          ||| |||    ||
+    1000 0100 1110 0000
+          ||| |||    ||
+    1111 1000 0001 1100 and mask
+
+    0000 0000 0000 0000
+    */
+    constexpr bool match(uint16_t in) {
+        in ^= xor_mask;
+        in &= and_mask;
+        return in == 0;
+    }
+
+   public:
+    uint16_t xor_mask = 0;
+    uint16_t and_mask = 0;
 };
+
+constexpr bit3mask operator"" _bit3(const char* mask, std::size_t len)
+{
+    string_repr_t arr;
+    for(std::size_t i = 0; i < 16; ++i)
+        arr[i] = mask[i];
+    return bit3mask(arr);
+}
+
+
+
+
+constexpr auto MOVE_RM_R = "100010xxxxxxxxxx"_bit3;
+constexpr auto MOVE_RM   = "1100011xxx000xxx"_bit3;
+constexpr auto MOVE_R    = "1011xxxxxxxxxxxx"_bit3;
+constexpr auto MOVE_M_A  = "1010000xxxxxxxxx"_bit3;
+constexpr auto MOVE_A_M  = "1010001xxxxxxxxx"_bit3;
+}
+
 
 //destination/source
 using D = bool;
@@ -45,7 +144,7 @@ struct Instruction {
 
     W m_W : 1;
     D m_D : 1;
-    OPCODE m_OPCODE : 6;
+    OPCODE:: m_OPCODE : 6;
 
     REG m_RM : 3;
     REG m_REG : 3;
@@ -60,7 +159,7 @@ struct Instruction {
 
 std::fstream& operator>>(std::fstream& is, Instruction& inst) {
     is.read(reinterpret_cast<char*>(&inst), 2);
-    return is; // Return the stream for chaining and error checks
+    return is;
 }
 
 static_assert(sizeof(Instruction) == 2);

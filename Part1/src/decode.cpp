@@ -43,7 +43,6 @@ OPCODE::ID peek_opcode_ident(decode::stream_it_t begin, decode::stream_it_t end)
     dest[1] = byte1;
 
     auto lt = OPCODE::LT::getInstance();
-
     return lt[opcode];
 }
 
@@ -54,8 +53,8 @@ std::string JT(OPCODE::ID op_id, stream_it_t& begin, stream_it_t end) {
     switch (op_id) {
         case MOV_RM_R:
             std::tie(str, advance) = MOV::decode_MOV_RM_R(begin, end); break;
-        case MOV_RM:
-            std::tie(str, advance) = MOV::decode_MOV_RM(begin, end); break;
+        case MOV_I_RM:
+            std::tie(str, advance) = MOV::decode_MOV_I_RM(begin, end); break;
         default:
             throw "unimplemented";
     }

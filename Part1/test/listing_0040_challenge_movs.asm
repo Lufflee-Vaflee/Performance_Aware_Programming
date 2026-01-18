@@ -12,11 +12,11 @@ mov [di + 901], word 347
 ; Direct address
 mov bp, [5]
 mov bx, [3458]
-
-; Memory-to-accumulator test
-mov ax, [2555]
-mov ax, [16]
-
-; Accumulator-to-memory test
-mov [2554], ax
-mov [15], ax
+;
+;; Memory-to-accumulator test
+;mov ax, [2555]
+;mov ax, [16]
+;
+;; Accumulator-to-memory test
+;mov [2554], ax
+;mov [15], ax

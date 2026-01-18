@@ -54,6 +54,6 @@ struct RM_R {
 static_assert(sizeof(RM_R) == 2);
 
 decode_inst_t decode_MOV_RM_R(stream_it_t begin, stream_it_t end);
-decode_inst_t decode_MOV_RM(stream_it_t begin, stream_it_t end);
+decode_inst_t decode_MOV_I_RM(stream_it_t begin, stream_it_t end);
 
 }

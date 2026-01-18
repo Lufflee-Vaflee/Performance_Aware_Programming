@@ -39,54 +39,88 @@ std::string decode_ADDR_CALC(ADDR_CALC const& calc) noexcept {
     throw "shit3";
 }
 
-decode_inst_t decode_MOV_RM_R(stream_it_t begin, stream_it_t end) {
+std::string format_displacment(int16_t displacment) {
+    std::stringstream result;
+    result << (displacment > 0 ? " + " : " - ") << std::abs(displacment);
+    return result.str();
+}
+
+std::string format_immediate(int16_t immediate, W w) {
+    std::stringstream result;
+    result << (w ? "word " : "byte ") << immediate;
+    return result.str();
+}
+
+decode_inst_t decode_MOV_RM_RI_body(RM_R inst, stream_it_t begin, stream_it_t end) {
     std::stringstream str;
-    str << "MOV ";
-    RM_R inst;
-
-    std::string LHS;
     std::string RHS;
-
-    uint16_t displacment;
-
-    raw_deserialize<RM_R>(inst, begin, end);
-    LHS = decode_REG(inst.m_REG, inst.m_W);
+    int16_t displacment;
 
     switch (inst.m_MOD) {
         case MOD::REGISTER:
             RHS = decode_REG(REG(inst.m_RM), inst.m_W);
-            if(!inst.m_D)
-                std::swap(LHS, RHS);
-
-            str << LHS << ", " << RHS;
-            return { str.str(), 2 };
+            return { RHS, 2 };
         case MOD::MEM_NO_DISPLACMENT:
             RHS = decode_ADDR_CALC(ADDR_CALC(inst.m_RM));
-            std::cout << RHS << "\n\n";
             if(RHS == "BP") {
-                raw_deserialize<uint16_t>(displacment, begin + 2, end);
-                str << LHS << ", [" << displacment << ']' << std::endl;
-                return {str.str(), 4 };
+                raw_deserialize<int16_t>(displacment, begin + 2, end);
+                str << "[" << displacment << ']';
+                RHS = str.str();
+                return { RHS, 4 };
             }
-            str << LHS << ", [" << RHS << ']';
-            return {str.str(), 2 };
+
+            str << "[" << RHS << ']';
+            RHS = str.str();
+            return { RHS, 2 };
         case MOD::MEM_8_DISPLACMENT:
             RHS = decode_ADDR_CALC(ADDR_CALC(inst.m_RM));
             displacment = *(begin + 2);
-            str << LHS << ", [" << RHS << " + " << displacment << ']';
-            return {str.str(), 3 };
+            str << '[' << RHS << format_displacment(displacment) << ']';
+            RHS = str.str();
+            return { RHS, 3 };
         case MOD::MEM_16_DISPLACMENT:
             RHS = decode_ADDR_CALC(ADDR_CALC(inst.m_RM));
-            raw_deserialize<uint16_t>(displacment, begin + 2, end);
-            str << LHS << ", [" << RHS << " + " << displacment << ']';
-            return {str.str(), 4 };
+            raw_deserialize<int16_t>(displacment, begin + 2, end);
+            str << '[' << RHS << format_displacment(displacment) << ']';
+            RHS = str.str();
+            return { RHS, 4 };
     }
 
-    throw "shit1";
 }
 
-decode_inst_t decode_MOV_RM(stream_it_t begin, stream_it_t end) {
+decode_inst_t decode_MOV_RM_R(stream_it_t begin, stream_it_t end) {
+    std::stringstream str;
+    RM_R inst;
+    std::string LHS;
 
+
+    raw_deserialize<RM_R>(inst, begin, end);
+    LHS = decode_REG(inst.m_REG, inst.m_W);
+    auto [ RHS, size ] = decode_MOV_RM_RI_body(inst, begin, end);
+
+    if(!inst.m_D) std::swap(LHS, RHS);
+    str << "MOV " << LHS << ", " << RHS;
+    return {str.str(), size};
+}
+
+decode_inst_t decode_MOV_I_RM(stream_it_t begin, stream_it_t end) {
+    std::stringstream str;
+    RM_R inst;
+    std::int16_t RHS;
+
+    raw_deserialize<RM_R>(inst, begin, end);
+
+    auto [ LHS, size ] = decode_MOV_RM_RI_body(inst, begin, end);
+    if(inst.m_W == 1) {
+        raw_deserialize<int16_t>(RHS, begin + size, end);
+        size += 2;
+    } else {
+        RHS = *(begin + size);
+        size += 1;
+    }
+
+    str << "MOV " << LHS << ", " << format_immediate(RHS, inst.m_W);
+    return { str.str(), size };
 }
 
 }

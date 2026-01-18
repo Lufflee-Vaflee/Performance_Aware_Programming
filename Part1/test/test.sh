@@ -32,13 +32,23 @@ fi
 for ASM in "${ASM_FILES[@]}"; do
     echo "== Testing $ASM =="
 
-    touch "$ASM.bin"
-    nasm -f bin "$ASM" -o "$ASM.bin"
+    touch "$ASM.direct"
+    touch "$ASM.decoded"
+    touch "$ASM.indirect"
 
-    if diff "$ASM" <("$DECODER" "$ASM.bin"); then
+    nasm -f bin "$ASM" -o "$ASM.direct"
+    "$DECODER" "$ASM.direct" >> "$ASM.decoded"
+    nasm -f bin "$ASM.decoded" -o "$ASM.indirect"
+
+    if (diff "$ASM.direct" "$ASM.indirect") then
         echo "SUCCESS"
     else
         echo "ERROR"
     fi
+
+    rm -f $ASM.direct
+    rm -f $ASM.decoded
+    rm -f $ASM.indirect
+
 done
 

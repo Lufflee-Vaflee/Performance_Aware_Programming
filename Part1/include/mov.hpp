@@ -1,7 +1,6 @@
 #pragma once
 
 #include <cstdint>
-#include <string>
 
 #include "decode.hpp"
 
@@ -31,12 +30,23 @@ enum class REG : uint8_t {
     BH_DI = 0b111,
 };
 
+enum class ADDR_CALC : uint8_t {
+    BX_SI = 0b000,
+    BX_DI = 0b001,
+    BP_SI = 0b010,
+    BP_DI = 0b011,
+    SI = 0b100,
+    DI = 0b101,
+    DIRECT = 0b110,
+    BX = 0b111,
+};
+
 struct RM_R { 
     W m_W : 1;
     D m_D : 1;
     uint8_t pad : 6; //opcode - unused
 
-    REG m_RM : 3;
+    uint8_t m_RM : 3;
     REG m_REG : 3;
     MOD m_MOD : 2;
 };
@@ -44,5 +54,6 @@ struct RM_R {
 static_assert(sizeof(RM_R) == 2);
 
 decode_inst_t decode_MOV_RM_R(stream_it_t begin, stream_it_t end);
+decode_inst_t decode_MOV_RM(stream_it_t begin, stream_it_t end);
 
 }

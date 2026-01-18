@@ -54,6 +54,8 @@ std::string JT(OPCODE::ID op_id, stream_it_t& begin, stream_it_t end) {
     switch (op_id) {
         case MOV_RM_R:
             std::tie(str, advance) = MOV::decode_MOV_RM_R(begin, end); break;
+        case MOV_RM:
+            std::tie(str, advance) = MOV::decode_MOV_RM(begin, end); break;
         default:
             throw "unimplemented";
     }

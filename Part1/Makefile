@@ -28,5 +28,8 @@ test: build
 
 clean:
 	rm -rf ./build/*
+	rm -f ./test/*.indirect
+	rm -f ./test/*.decoded*
+	rm -f ./test/*.direct
 	rm -f ./test/*.bin
 

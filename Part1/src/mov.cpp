@@ -123,4 +123,53 @@ decode_inst_t decode_MOV_I_RM(stream_it_t begin, stream_it_t end) {
     return { str.str(), size };
 }
 
+
+decode_inst_t decode_MOV_I_R(stream_it_t begin, stream_it_t end) {
+    std::stringstream str;
+    I_R inst;
+
+    raw_deserialize<I_R>(inst, begin, end);
+    std::string LHS = decode_REG(inst.m_REG, inst.m_W);
+
+    int16_t RHS;
+    int size;
+    if(inst.m_W == 1) {
+        raw_deserialize<int16_t>(RHS, begin + 1, end);
+        size = 3;
+    } else {
+        RHS = *(begin + 1);
+        size = 2;
+    }
+
+    str << "MOV " << LHS << ", " << RHS;
+    return { str.str(), size };
+}
+
+
+decode_inst_t decode_MOV_M_A(stream_it_t begin, stream_it_t end) {
+    std::stringstream str;
+    A inst;
+
+    raw_deserialize<A>(inst, begin, end);
+    std::string LHS = "AX";
+
+    uint16_t RHS;
+    std::string RHS_str;
+    int size;
+    if(inst.m_W == 1) {
+        raw_deserialize<uint16_t>(RHS, begin + 1, end);
+        size = 3;
+    } else {
+        RHS = *(begin + 1);
+        size = 2;
+    }
+
+    if(!inst.m_D) {
+        str << "MOV " << LHS << ", [" << RHS << ']';
+    } else {
+        str << "MOV " << '[' << RHS << ']' << ", " << LHS;
+    }
+    return { str.str(), size };
+}
+
 }

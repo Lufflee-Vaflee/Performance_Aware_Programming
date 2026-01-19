@@ -76,6 +76,25 @@ std::string JT(OPCODE::ID op_id, stream_it_t& begin, stream_it_t end) {
             std::tie(str, advance) = CMP::I_RM(begin, end); break;
         case CMP_I_A:
             std::tie(str, advance) = CMP::I_A(begin, end); break;
+        case JZ:
+
+        case JL:
+
+        case JLE:
+
+        case JB:
+        case JBE:
+        case JP:
+        case JO:
+        case JS:
+        case JNE:
+        case JNL:
+        case JG:
+        case JAE:
+        case JA:
+        case JPO:
+        case JNO:
+        case JNS:
         default:
             throw "unimplemented";
     }

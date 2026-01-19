@@ -205,7 +205,7 @@ std::pair<T, int> decode_WDATA(W w, S s, stream_it_t begin, stream_it_t end) {
         }
     }
 
-    throw "ASDASFASF";
+    std::unreachable();
 }
 
 }

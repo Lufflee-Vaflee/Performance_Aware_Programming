@@ -7,6 +7,7 @@
 #include "LT.hpp"
 
 #include "mov.hpp"
+#include "add.hpp"
 
 namespace decode {
 
@@ -59,6 +60,12 @@ std::string JT(OPCODE::ID op_id, stream_it_t& begin, stream_it_t end) {
             std::tie(str, advance) = MOV::decode_MOV_I_R(begin, end); break;
         case MOV_M_A:
             std::tie(str, advance) = MOV::decode_MOV_M_A(begin, end); break;
+        case ADD_RM_R:
+            std::tie(str, advance) = ADD::decode_ADD_RM_R(begin, end); break;
+        case ADD_I_RM:
+            std::tie(str, advance) = ADD::decode_ADD_I_RM(begin, end); break;
+        case ADD_I_A:
+            std::tie(str, advance) = ADD::decode_ADD_I_A(begin, end); break;
         default:
             throw "unimplemented";
     }

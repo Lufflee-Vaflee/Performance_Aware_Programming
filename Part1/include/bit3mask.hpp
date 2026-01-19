@@ -4,8 +4,6 @@
 #include <cassert>
 #include <string_view>
 #include <stdexcept>
-#include <iostream>
-#include <bitset>
 
 namespace OPCODE {
 

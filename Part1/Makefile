@@ -1,4 +1,4 @@
-CXXFLAGS = -std=c++23 -Wall -pedantic -fstrict-aliasing -g
+CXXFLAGS = -std=c++23 -Wall -pedantic -fstrict-aliasing -g -O1
 
 ASM_FILES := $(wildcard test/*.asm)
 TEST_SCRIPT := ./test/test.sh

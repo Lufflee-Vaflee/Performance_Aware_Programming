@@ -1,12 +1,11 @@
-#include "add.hpp"
+#include "JT.hpp"
 
 namespace decode::ADD {
 
-decode_inst_t decode_ADD_RM_R(stream_it_t begin, stream_it_t end) {
+decode_inst_t RM_R(stream_it_t begin, stream_it_t end) {
     std::stringstream str;
     RM_R_D inst;
     std::string LHS;
-
 
     raw_deserialize<RM_R_D>(inst, begin, end);
     LHS = decode_REG(inst.m_REG, inst.m_W);
@@ -17,7 +16,7 @@ decode_inst_t decode_ADD_RM_R(stream_it_t begin, stream_it_t end) {
     return { str.str(), size + 2 };
 }
 
-decode_inst_t decode_ADD_I_RM(stream_it_t begin, stream_it_t end) {
+decode_inst_t I_RM(stream_it_t begin, stream_it_t end) {
     std::stringstream str;
     RM_R_S inst;
 
@@ -29,7 +28,7 @@ decode_inst_t decode_ADD_I_RM(stream_it_t begin, stream_it_t end) {
     return { str.str(), sizeof(RM_R_D) + size_LHS + size_RHS };
 }
 
-decode_inst_t decode_ADD_I_A(stream_it_t begin, stream_it_t end) {
+decode_inst_t I_A(stream_it_t begin, stream_it_t end) {
     std::stringstream str;
     A inst;
 
@@ -41,7 +40,11 @@ decode_inst_t decode_ADD_I_A(stream_it_t begin, stream_it_t end) {
     return { str.str(), sizeof(A) + size_RHS };
 }
 
-decode_inst_t decode_SUB_RM_R(stream_it_t begin, stream_it_t end) {
+}
+
+namespace decode::SUB {
+
+decode_inst_t RM_R(stream_it_t begin, stream_it_t end) {
     std::stringstream str;
     RM_R_D inst;
     std::string LHS;
@@ -56,7 +59,7 @@ decode_inst_t decode_SUB_RM_R(stream_it_t begin, stream_it_t end) {
     return { str.str(), size + 2 };
 }
 
-decode_inst_t decode_SUB_I_RM(stream_it_t begin, stream_it_t end) {
+decode_inst_t I_RM(stream_it_t begin, stream_it_t end) {
     std::stringstream str;
     RM_R_S inst;
 
@@ -68,7 +71,7 @@ decode_inst_t decode_SUB_I_RM(stream_it_t begin, stream_it_t end) {
     return { str.str(), sizeof(RM_R_D) + size_LHS + size_RHS };
 }
 
-decode_inst_t decode_SUB_I_A(stream_it_t begin, stream_it_t end) {
+decode_inst_t I_A(stream_it_t begin, stream_it_t end) {
     std::stringstream str;
     A inst;
 

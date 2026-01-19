@@ -1,4 +1,4 @@
-#include "mov.hpp"
+#include "JT.hpp"
 
 #include <sstream>
 #include <utility>
@@ -7,8 +7,23 @@
 
 namespace decode::MOV {
 
+struct I_R { 
+    REG m_REG : 3;
+    W m_W : 1;
+    uint8_t pad : 4; //opcode - unused
+};
 
-decode_inst_t decode_MOV_RM_R(stream_it_t begin, stream_it_t end) {
+static_assert(sizeof(I_R) == 1);
+
+struct A { 
+    W m_W : 1;
+    D m_D : 1;
+    uint8_t pad : 6; //opcode - unused
+};
+
+static_assert(sizeof(A) == 1);
+
+decode_inst_t RM_R(stream_it_t begin, stream_it_t end) {
     std::stringstream str;
     RM_R_D inst;
     std::string LHS;
@@ -22,7 +37,7 @@ decode_inst_t decode_MOV_RM_R(stream_it_t begin, stream_it_t end) {
     return { str.str(), size + 2 };
 }
 
-decode_inst_t decode_MOV_I_RM(stream_it_t begin, stream_it_t end) {
+decode_inst_t I_RM(stream_it_t begin, stream_it_t end) {
     std::stringstream str;
     RM_R_D inst;
 
@@ -35,7 +50,7 @@ decode_inst_t decode_MOV_I_RM(stream_it_t begin, stream_it_t end) {
 }
 
 
-decode_inst_t decode_MOV_I_R(stream_it_t begin, stream_it_t end) {
+decode_inst_t DI_R(stream_it_t begin, stream_it_t end) {
     std::stringstream str;
     I_R inst;
 
@@ -48,7 +63,7 @@ decode_inst_t decode_MOV_I_R(stream_it_t begin, stream_it_t end) {
 }
 
 
-decode_inst_t decode_MOV_M_A(stream_it_t begin, stream_it_t end) {
+decode_inst_t M_A(stream_it_t begin, stream_it_t end) {
     std::stringstream str;
     A inst;
 

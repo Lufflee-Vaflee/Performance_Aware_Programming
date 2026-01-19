@@ -6,8 +6,7 @@
 
 #include "LT.hpp"
 
-#include "mov.hpp"
-#include "add.hpp"
+#include "JT.hpp"
 
 namespace decode {
 
@@ -53,25 +52,25 @@ std::string JT(OPCODE::ID op_id, stream_it_t& begin, stream_it_t end) {
     std::string str;
     switch (op_id) {
         case MOV_RM_R:
-            std::tie(str, advance) = MOV::decode_MOV_RM_R(begin, end); break;
+            std::tie(str, advance) = MOV::RM_R(begin, end); break;
         case MOV_I_RM:
-            std::tie(str, advance) = MOV::decode_MOV_I_RM(begin, end); break;
+            std::tie(str, advance) = MOV::I_RM(begin, end); break;
         case MOV_I_R:
-            std::tie(str, advance) = MOV::decode_MOV_I_R(begin, end); break;
+            std::tie(str, advance) = MOV::DI_R(begin, end); break;
         case MOV_M_A:
-            std::tie(str, advance) = MOV::decode_MOV_M_A(begin, end); break;
+            std::tie(str, advance) = MOV::M_A(begin, end); break;
         case ADD_RM_R:
-            std::tie(str, advance) = ADD::decode_ADD_RM_R(begin, end); break;
+            std::tie(str, advance) = ADD::RM_R(begin, end); break;
         case ADD_I_RM:
-            std::tie(str, advance) = ADD::decode_ADD_I_RM(begin, end); break;
+            std::tie(str, advance) = ADD::I_RM(begin, end); break;
         case ADD_I_A:
-            std::tie(str, advance) = ADD::decode_ADD_I_A(begin, end); break;
+            std::tie(str, advance) = ADD::I_A(begin, end); break;
         case SUB_RM_R:
-            std::tie(str, advance) = ADD::decode_SUB_RM_R(begin, end); break;
+            std::tie(str, advance) = SUB::RM_R(begin, end); break;
         case SUB_I_RM:
-            std::tie(str, advance) = ADD::decode_SUB_I_RM(begin, end); break;
+            std::tie(str, advance) = SUB::I_RM(begin, end); break;
         case SUB_I_A:
-            std::tie(str, advance) = ADD::decode_SUB_I_A(begin, end); break;
+            std::tie(str, advance) = SUB::I_A(begin, end); break;
         default:
             throw "unimplemented";
     }

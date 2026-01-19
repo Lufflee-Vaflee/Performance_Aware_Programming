@@ -10,28 +10,32 @@ all: build test
 
 build: build/8086sim
 
-build/8086sim: build/main.o build/decode.o build/mov.o build/add.o
-	g++ -o build/8086sim build/main.o build/decode.o build/mov.o build/add.o
+build/8086sim: build/main.o build/decode.o build/mov.o build/add.o build/cmp.o build/sub.o
+	g++ -o build/8086sim build/main.o build/decode.o build/mov.o build/add.o build/sub.o
 
 build/main.o: src/main.cpp include/decode.hpp
 	g++ -c $(CXXFLAGS) $(INC) src/main.cpp -o build/main.o
 
-build/decode.o: src/decode.cpp include/decode.hpp include/mov.hpp include/LT.hpp
+build/decode.o: src/decode.cpp include/decode.hpp include/LT.hpp include/JT.hpp
 	g++ -c $(CXXFLAGS) $(INC) src/decode.cpp -o build/decode.o
 
-build/mov.o: src/mov.cpp include/mov.hpp
+build/mov.o: src/mov.cpp include/JT.hpp
 	g++ -c $(CXXFLAGS) $(INC) src/mov.cpp -o build/mov.o
 
-build/add.o: src/add.cpp include/add.hpp
+build/add.o: src/add.cpp include/JT.hpp
 	g++ -c $(CXXFLAGS) $(INC) src/add.cpp -o build/add.o
 
-include/add.hpp: include/decode.hpp
+build/sub.o: src/sub.cpp include/JT.hpp
+	g++ -c $(CXXFLAGS) $(INC) src/sub.cpp -o build/sub.o
 
-include/mov.hpp: include/decode.hpp
+build/cmp.o: src/cmp.cpp include/JT.hpp
+	g++ -c $(CXXFLAGS) $(INC) src/cmp.cpp -o build/cmp
 
 include/LT.hpp: include/opcode.hpp
 
 include/opcode.hpp: include/bit3mask.hpp
+
+include/JT.hpp: include/decode.hpp
 
 test: build
 	./test/test.sh ./build/8086sim ./test

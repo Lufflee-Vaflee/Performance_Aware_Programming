@@ -5,7 +5,6 @@
 #include <iostream>
 
 #include "LT.hpp"
-
 #include "JT.hpp"
 
 namespace decode {
@@ -79,7 +78,6 @@ std::string JT(OPCODE::ID op_id, stream_it_t& begin, stream_it_t end) {
     return str;
 }
 
-
 std::string decode(instr_stream_t& instr_stream) {
     for(auto it = instr_stream.begin(); it != instr_stream.end();) {
         auto op_id = peek_opcode_ident(it, instr_stream.end());
@@ -88,7 +86,6 @@ std::string decode(instr_stream_t& instr_stream) {
 
     return {};
 }
-
 
 }
 

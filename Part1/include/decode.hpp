@@ -65,12 +65,43 @@ enum class ADDR_CALC : uint8_t {
 
 
 using D = bool;
-
 using W = bool;
+using S = bool;
+
+struct RM_R_D { 
+    W m_W : 1;
+    D m_D : 1;
+    uint8_t pad : 6; //opcode - unused
+
+    uint8_t m_RM : 3;
+    REG m_REG : 3;
+    MOD m_MOD : 2;
+};
+
+static_assert(sizeof(RM_R_D) == 2);
+
+struct RM_R_S {
+    W m_W : 1;
+    S m_S : 1;
+    uint8_t pad : 6; //opcode - unused
+
+    uint8_t m_RM : 3;
+    uint8_t pad2 : 3; // reg unused
+    MOD m_MOD : 2;
+};
+
+static_assert(sizeof(RM_R_S) == 2);
 
 inline std::string format_displacment(int16_t displacment) {
     std::stringstream result;
     result << (displacment > 0 ? " + " : " - ") << std::abs(displacment);
+    return result.str();
+}
+
+
+inline std::string format_immediate(int16_t immediate, W w) {
+    std::stringstream result;
+    result << (w ? "word " : "byte ") << immediate;
     return result.str();
 }
 
@@ -143,18 +174,31 @@ decode_inst_t decode_DISPLACMENT(T inst, stream_it_t begin, stream_it_t end) {
 }
 
 template<typename T>
-std::pair<T, int> decode_WDATA(W w, stream_it_t begin, stream_it_t end) {
-    int size;
-    int16_t arg;
-    if(w) {
+std::pair<T, int> decode_WDATA(W w, S s, stream_it_t begin, stream_it_t end) {
+    int16_t arg = 0;
+
+    int S_W = s;
+    S_W <<= 1;
+    S_W += w;
+
+    switch(S_W) {
+    case 0:
+        return {*(begin), 1};
+    case 1:
         raw_deserialize<int16_t>(arg, begin, end);
-        size = 2;
-    } else {
-        arg = *(begin);
-        size = 1;
+        return { arg , 2 };
+    case 3:
+        int8_t data = *(begin);
+        if(data >= 0) {
+            return { data, 1 };
+        } else {
+            arg = data;
+            arg |= 0xFF00;
+            return { arg, 1 };
+        }
     }
 
-    return { arg, size };
+    throw "ASDASFASF";
 }
 
 }

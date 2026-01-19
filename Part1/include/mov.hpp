@@ -6,19 +6,6 @@
 
 namespace decode::MOV {
 
-
-struct RM_R { 
-    W m_W : 1;
-    D m_D : 1;
-    uint8_t pad : 6; //opcode - unused
-
-    uint8_t m_RM : 3;
-    REG m_REG : 3;
-    MOD m_MOD : 2;
-};
-
-static_assert(sizeof(RM_R) == 2);
-
 struct I_R { 
     REG m_REG : 3;
     W m_W : 1;

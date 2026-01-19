@@ -92,6 +92,13 @@ struct RM_R_S {
 
 static_assert(sizeof(RM_R_S) == 2);
 
+struct A { 
+    W m_W : 1;
+    uint8_t pad : 7; //opcode - unused
+};
+
+static_assert(sizeof(A) == 1);
+
 inline std::string format_displacment(int16_t displacment) {
     std::stringstream result;
     result << (displacment > 0 ? " + " : " - ") << std::abs(displacment);

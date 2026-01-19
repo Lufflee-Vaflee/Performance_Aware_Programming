@@ -66,6 +66,12 @@ std::string JT(OPCODE::ID op_id, stream_it_t& begin, stream_it_t end) {
             std::tie(str, advance) = ADD::decode_ADD_I_RM(begin, end); break;
         case ADD_I_A:
             std::tie(str, advance) = ADD::decode_ADD_I_A(begin, end); break;
+        case SUB_RM_R:
+            std::tie(str, advance) = ADD::decode_SUB_RM_R(begin, end); break;
+        case SUB_I_RM:
+            std::tie(str, advance) = ADD::decode_SUB_I_RM(begin, end); break;
+        case SUB_I_A:
+            std::tie(str, advance) = ADD::decode_SUB_I_A(begin, end); break;
         default:
             throw "unimplemented";
     }

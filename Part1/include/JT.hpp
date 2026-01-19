@@ -23,4 +23,10 @@ namespace SUB {
     decode_inst_t I_A(stream_it_t begin, stream_it_t end);
 }
 
+namespace CMP {
+    decode_inst_t RM_R(stream_it_t begin, stream_it_t end);
+    decode_inst_t I_RM(stream_it_t begin, stream_it_t end);
+    decode_inst_t I_A(stream_it_t begin, stream_it_t end);
+}
+
 }

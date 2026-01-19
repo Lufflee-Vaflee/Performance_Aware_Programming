@@ -20,6 +20,9 @@ constexpr auto SUB_RM_R = "001010xxxxxxxxxx_0"_bit3;
 constexpr auto SUB_I_RM = "100000xxxx101xxx_2"_bit3;
 constexpr auto SUB_I_A  = "0010110xxxxxxxxx_1"_bit3;
 
+constexpr auto CMP_RM_R = "001110xxxxxxxxxx_2"_bit3;
+constexpr auto CMP_I_RM = "100000xxxx111xxx_3"_bit3;
+constexpr auto CMP_I_A  = "0011110xxxxxxxxx_3"_bit3;
 
 constexpr auto OPCODE_TABLE = std::tuple {
     MOV_RM_R,
@@ -33,7 +36,11 @@ constexpr auto OPCODE_TABLE = std::tuple {
 
     SUB_RM_R,
     SUB_I_RM,
-    SUB_I_A 
+    SUB_I_A,
+
+    CMP_RM_R,
+    CMP_I_RM,
+    CMP_I_A
 };
 
 constexpr bool OPCODE_TABLE_VALID = details::validate_OPCODE_TABLE(OPCODE_TABLE);

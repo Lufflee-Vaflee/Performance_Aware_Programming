@@ -11,7 +11,7 @@ all: build test
 build: build/8086sim
 
 build/8086sim: build/main.o build/decode.o build/mov.o build/add.o build/cmp.o build/sub.o
-	g++ -o build/8086sim build/main.o build/decode.o build/mov.o build/add.o build/sub.o
+	g++ -o build/8086sim build/main.o build/decode.o build/mov.o build/add.o build/sub.o build/cmp.o
 
 build/main.o: src/main.cpp include/decode.hpp
 	g++ -c $(CXXFLAGS) $(INC) src/main.cpp -o build/main.o
@@ -29,7 +29,7 @@ build/sub.o: src/sub.cpp include/JT.hpp
 	g++ -c $(CXXFLAGS) $(INC) src/sub.cpp -o build/sub.o
 
 build/cmp.o: src/cmp.cpp include/JT.hpp
-	g++ -c $(CXXFLAGS) $(INC) src/cmp.cpp -o build/cmp
+	g++ -c $(CXXFLAGS) $(INC) src/cmp.cpp -o build/cmp.o
 
 include/LT.hpp: include/opcode.hpp
 

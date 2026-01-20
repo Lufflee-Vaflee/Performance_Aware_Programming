@@ -3,7 +3,9 @@
 #include <algorithm>
 #include <fstream>
 #include <iostream>
+#include <cstring>
 
+#include "J_.hpp"
 #include "LT.hpp"
 #include "JT.hpp"
 
@@ -45,6 +47,9 @@ OPCODE::ID peek_opcode_ident(decode::stream_it_t begin, decode::stream_it_t end)
     return lt[opcode];
 }
 
+static conditional_jmp_table jmp_table;
+stream_it_t start;
+
 std::string JT(OPCODE::ID op_id, stream_it_t& begin, stream_it_t end) {
     using namespace OPCODE;
     int advance = 0;
@@ -77,24 +82,45 @@ std::string JT(OPCODE::ID op_id, stream_it_t& begin, stream_it_t end) {
         case CMP_I_A:
             std::tie(str, advance) = CMP::I_A(begin, end); break;
         case JZ:
-
+            std::tie(str, advance) = jmp_table.decode_conditional_jmp("JZ", start, begin, end); break;
         case JL:
-
+            std::tie(str, advance) = jmp_table.decode_conditional_jmp("JL", start, begin, end); break;
         case JLE:
-
+            std::tie(str, advance) = jmp_table.decode_conditional_jmp("JLE", start, begin, end); break;
         case JB:
+            std::tie(str, advance) = jmp_table.decode_conditional_jmp("JB", start, begin, end); break;
         case JBE:
+            std::tie(str, advance) = jmp_table.decode_conditional_jmp("JBE", start, begin, end); break;
         case JP:
+            std::tie(str, advance) = jmp_table.decode_conditional_jmp("JP", start, begin, end); break;
         case JO:
+            std::tie(str, advance) = jmp_table.decode_conditional_jmp("JO", start, begin, end); break;
         case JS:
+            std::tie(str, advance) = jmp_table.decode_conditional_jmp("JS", start, begin, end); break;
         case JNE:
+            std::tie(str, advance) = jmp_table.decode_conditional_jmp("JNE", start, begin, end); break;
         case JNL:
+            std::tie(str, advance) = jmp_table.decode_conditional_jmp("JNL", start, begin, end); break;
         case JG:
+            std::tie(str, advance) = jmp_table.decode_conditional_jmp("JG", start, begin, end); break;
         case JAE:
+            std::tie(str, advance) = jmp_table.decode_conditional_jmp("JAE", start, begin, end); break;
         case JA:
+            std::tie(str, advance) = jmp_table.decode_conditional_jmp("JA", start, begin, end); break;
         case JPO:
+            std::tie(str, advance) = jmp_table.decode_conditional_jmp("JPO", start, begin, end); break;
         case JNO:
+            std::tie(str, advance) = jmp_table.decode_conditional_jmp("JNO", start, begin, end); break;
         case JNS:
+            std::tie(str, advance) = jmp_table.decode_conditional_jmp("JNS", start, begin, end); break;
+        case LOOP:
+            std::tie(str, advance) = jmp_table.decode_conditional_jmp("LOOP", start, begin, end); break;
+        case LOOPZ:
+            std::tie(str, advance) = jmp_table.decode_conditional_jmp("LOOPZ", start, begin, end); break;
+        case LOOPNZ:
+            std::tie(str, advance) = jmp_table.decode_conditional_jmp("LOOPNZ", start, begin, end); break;
+        case JCXZ:
+            std::tie(str, advance) = jmp_table.decode_conditional_jmp("JCXZ", start, begin, end); break;
         default:
             throw "unimplemented";
     }
@@ -104,9 +130,25 @@ std::string JT(OPCODE::ID op_id, stream_it_t& begin, stream_it_t end) {
 }
 
 std::string decode(instr_stream_t& instr_stream) {
+    start = instr_stream.begin();
+    std::vector<std::pair<std::string, std::size_t>> ops;
     for(auto it = instr_stream.begin(); it != instr_stream.end();) {
         auto op_id = peek_opcode_ident(it, instr_stream.end());
-        std::cout << to_lower(JT(op_id, it, instr_stream.end())) << '\n';
+        auto cur_pos = it - instr_stream.begin();
+        std::string op = to_lower(JT(op_id, it, instr_stream.end()));
+        ops.emplace_back(op, cur_pos);
+    }
+
+    std::size_t current_cs_position = 0;
+    for(auto it = ops.begin(); it != ops.end(); ++it) {
+        current_cs_position = (*it).second;
+        auto label_num = jmp_table[current_cs_position];
+
+        std::cout << (*it).first << '\n';
+        if(label_num != std::numeric_limits<std::size_t>::max()) {
+            std::cout << "label" << label_num << ":\n";
+        }
+
     }
 
     return {};

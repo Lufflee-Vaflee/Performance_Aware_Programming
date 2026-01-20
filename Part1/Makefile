@@ -16,7 +16,7 @@ build/8086sim: build/main.o build/decode.o build/mov.o build/add.o build/cmp.o b
 build/main.o: src/main.cpp include/decode.hpp
 	g++ -c $(CXXFLAGS) $(INC) src/main.cpp -o build/main.o
 
-build/decode.o: src/decode.cpp include/decode.hpp include/LT.hpp include/JT.hpp
+build/decode.o: src/decode.cpp include/decode.hpp include/LT.hpp include/JT.hpp include/J_.hpp
 	g++ -c $(CXXFLAGS) $(INC) src/decode.cpp -o build/decode.o
 
 build/mov.o: src/mov.cpp include/JT.hpp

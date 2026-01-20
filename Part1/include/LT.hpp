@@ -41,6 +41,11 @@ constexpr auto JPO      = "01111011xxxxxxxx_13"_bit3;
 constexpr auto JNO      = "01110001xxxxxxxx_14"_bit3;
 constexpr auto JNS      = "01111001xxxxxxxx_15"_bit3;
 
+constexpr auto LOOP     = "11100010xxxxxxxx_0"_bit3;
+constexpr auto LOOPZ    = "11100001xxxxxxxx_1"_bit3;
+constexpr auto LOOPNZ   = "11100000xxxxxxxx_2"_bit3;
+constexpr auto JCXZ     = "11100011xxxxxxxx_3"_bit3;
+
 constexpr auto OPCODE_TABLE = std::tuple {
     MOV_RM_R,
     MOV_I_R,
@@ -76,6 +81,10 @@ constexpr auto OPCODE_TABLE = std::tuple {
     JNO,
     JNS,
 
+    LOOP,
+    LOOPZ,
+    LOOPNZ,
+    JCXZ,
 };
 
 constexpr bool OPCODE_TABLE_VALID = details::validate_OPCODE_TABLE(OPCODE_TABLE);

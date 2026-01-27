@@ -17,28 +17,11 @@ instr_stream_t load_input_stream(std::fstream& stream);
 
 using decode_inst_t = std::pair<std::string, int>;
 
-template<typename T>
-//TODO add POD restriction
-void raw_deserialize(T& dest, stream_it_t begin, stream_it_t end) {
-    char* c_dest = reinterpret_cast<char*>(&dest);
-    stream_it_t c_end = begin + sizeof(T);
-    assert(end >= c_end);
-
-    std::size_t i = 0;
-    while(begin != c_end) {
-        c_dest[i] = *begin;
-        begin++;
-        i++;
-    }
-
-    return;
-}
-
 enum class MOD : uint8_t {
-    MEM_NO_DISPLACMENT = 0b00,
-    MEM_8_DISPLACMENT = 0b01,
-    MEM_16_DISPLACMENT = 0b10,
-    REGISTER = 0b11
+    MEM_NO_DISPLACMENT  = 0b00,
+    MEM_8_DISPLACMENT   = 0b01,
+    MEM_16_DISPLACMENT  = 0b10,
+    REGISTER            = 0b11
 };
 
 enum class REG : uint8_t {
@@ -53,14 +36,14 @@ enum class REG : uint8_t {
 };
 
 enum class ADDR_CALC : uint8_t {
-    BX_SI = 0b000,
-    BX_DI = 0b001,
-    BP_SI = 0b010,
-    BP_DI = 0b011,
-    SI = 0b100,
-    DI = 0b101,
-    DIRECT = 0b110,
-    BX = 0b111,
+    BX_SI   = 0b000,
+    BX_DI   = 0b001,
+    BP_SI   = 0b010,
+    BP_DI   = 0b011,
+    SI      = 0b100,
+    DI      = 0b101,
+    DIRECT  = 0b110,
+    BX      = 0b111,
 };
 
 
@@ -142,6 +125,22 @@ inline std::string decode_ADDR_CALC(ADDR_CALC const& calc) noexcept {
     std::unreachable();
 }
 
+template<typename T>
+//TODO add POD restriction
+void raw_deserialize(T& dest, stream_it_t begin, stream_it_t end) {
+    char* c_dest = reinterpret_cast<char*>(&dest);
+    stream_it_t c_end = begin + sizeof(T);
+    assert(end >= c_end);
+
+    std::size_t i = 0;
+    while(begin != c_end) {
+        c_dest[i] = *begin;
+        begin++;
+        i++;
+    }
+
+    return;
+}
 
 template<typename T>
 decode_inst_t decode_DISPLACMENT(T inst, stream_it_t begin, stream_it_t end) {

@@ -43,6 +43,5 @@ class conditional_jmp_table {
     std::stringstream str;
 };
 
-
 }
 

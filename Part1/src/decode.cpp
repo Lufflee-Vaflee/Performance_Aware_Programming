@@ -19,7 +19,6 @@ std::string to_lower(std::string const& data) {
      return result;
 }
 
-
 instr_stream_t load_input_stream(std::fstream& stream) {
     std::vector<char> result;
     stream.seekg(0, std::ios::end);
@@ -31,7 +30,7 @@ instr_stream_t load_input_stream(std::fstream& stream) {
     return result;
 }
 
-OPCODE::ID peek_opcode_ident(decode::stream_it_t begin, decode::stream_it_t end) {
+opcode::ID peek_opcode_ident(decode::stream_it_t begin, decode::stream_it_t end) {
     char byte1 = *begin;
     char byte2 = 0;
     if(end - begin > 1) {
@@ -43,15 +42,15 @@ OPCODE::ID peek_opcode_ident(decode::stream_it_t begin, decode::stream_it_t end)
     dest[0] = byte2;
     dest[1] = byte1;
 
-    auto lt = OPCODE::LT::getInstance();
+    auto lt = opcode::LT::getInstance();
     return lt[opcode];
 }
 
 static conditional_jmp_table jmp_table;
 stream_it_t start;
 
-std::string JT(OPCODE::ID op_id, stream_it_t& begin, stream_it_t end) {
-    using namespace OPCODE;
+std::string JT(opcode::ID op_id, stream_it_t& begin, stream_it_t end) {
+    using namespace opcode;
     int advance = 0;
     std::string str;
     switch (op_id) {

@@ -5,14 +5,11 @@
 #include <string_view>
 #include <stdexcept>
 
-namespace OPCODE {
+namespace decode::opcode {
 
 using string_repr_t = char[16];
 
 struct bit3mask {
-   public:
-    using string_repr_t = char[16];
-
    private:
     constexpr static bool valid_3bit(char c) {
         return c == '0' || c == '1' || c == 'x';
@@ -78,7 +75,7 @@ struct bit3mask {
           ||| |||    ||
     1010 1000 0000 0000 xor mask
           ||| |||    ||
-    1000 0100 1110 0000 xor result
+    0000 0100 1110 0000 xor result
           ||| |||    ||
     1111 1000 0001 1100 and mask
 
@@ -102,8 +99,7 @@ struct bit3mask {
         return lhs.xor_mask == rhs.xor_mask && lhs.and_mask == rhs.and_mask;
     }
 
-    //TODO: make it private
-   public:
+   private:
     uint16_t xor_mask = 0;
     uint16_t and_mask = 0;
 };
@@ -123,35 +119,6 @@ constexpr int constexpr_stoi(std::string_view str) {
     return value;
 }
 
-struct ID {
-    bit3mask m_mask;
-    uint8_t m_index;
-
-    constexpr operator int() const {
-        return static_cast<int>(m_index);
-    }
-};
-
-constexpr ID operator"" _bit3(const char* mask, std::size_t len)
-{
-    string_repr_t arr;
-    for(std::size_t i = 0; i < 16; ++i)
-        arr[i] = mask[i];
-
-    if(mask[16] != '_') {
-        throw "dont panic";
-    }
-
-    uint8_t index = 0;
-    for(std::size_t i = 0; i < 7; ++i) {
-        if(arr[i] == '1' && i < 3) {
-            index +=1;
-        }
-        index <<=1;
-    }
-
-    index += constexpr_stoi(&mask[17]);
-    return { bit3mask(arr), index };
-}
 
 }
+

@@ -7,7 +7,6 @@ decode_inst_t RM_R(stream_it_t begin, stream_it_t end) {
     RM_R_D inst;
     std::string LHS;
 
-
     raw_deserialize<RM_R_D>(inst, begin, end);
     LHS = decode_REG(inst.m_REG, inst.m_W);
     auto [ RHS, size ] = decode_DISPLACMENT(inst, begin, end);

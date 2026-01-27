@@ -1,7 +1,6 @@
 #include "decode.hpp"
 
 #include <algorithm>
-#include <fstream>
 #include <iostream>
 #include <cstring>
 
@@ -11,36 +10,19 @@
 
 namespace decode {
 
-std::string to_lower(std::string const& data) {
-    std::string result;
-    result.resize(data.size());
-     std::transform(data.cbegin(), data.cend(), result.begin(),
-        [](unsigned char c){ return std::tolower(c); });
-     return result;
-}
+//std::string to_lower(std::string const& data) {
+//    std::string result;
+//    result.resize(data.size());
+//     std::transform(data.cbegin(), data.cend(), result.begin(),
+//        [](unsigned char c){ return std::tolower(c); });
+//     return result;
+//}
 
-instr_stream_t load_input_stream(std::fstream& stream) {
-    std::vector<char> result;
-    stream.seekg(0, std::ios::end);
-    auto fsize = stream.tellg();
-    stream.seekg(0, std::ios::beg);
-    result.resize(fsize);
-
-    stream.read(static_cast<char*>(result.data()), fsize);
-    return result;
-}
-
-opcode::ID peek_opcode_ident(decode::stream_it_t begin, decode::stream_it_t end) {
-    char byte1 = *begin;
-    char byte2 = 0;
-    if(end - begin > 1) {
-        byte2 = *(begin + 1);
-    }
-
+opcode::ID peek_opcode_ident(decode::stream_it_t begin) {
     uint16_t opcode = 0;
     char* dest = reinterpret_cast<char*>(&opcode);
-    dest[0] = byte2;
-    dest[1] = byte1;
+    dest[0] = (*begin + 1);
+    dest[1] = *begin;
 
     auto lt = opcode::LT::getInstance();
     return lt[opcode];
@@ -128,30 +110,40 @@ std::string JT(opcode::ID op_id, stream_it_t& begin, stream_it_t end) {
     return str;
 }
 
-std::string decode(instr_stream_t& instr_stream) {
+opcode_stream_t decode(data_stream_t& instr_stream) {
+    opcode_stream_t result;
+    result.reserve(instr_stream.size() / 6);
+
+
+    //insert dummy byte to remove check at peek opcode
+    auto size = instr_stream.size();
+    instr_stream.emplace_back('0');
+
     start = instr_stream.begin();
-    std::vector<std::pair<std::string, std::size_t>> ops;
-    for(auto it = instr_stream.begin(); it != instr_stream.end();) {
-        auto op_id = peek_opcode_ident(it, instr_stream.end());
+    auto end = instr_stream.end();
+
+    for(auto it = start; it != end;) {
+        auto op_id = peek_opcode_ident(it);
         auto cur_pos = it - instr_stream.begin();
-        std::string op = to_lower(JT(op_id, it, instr_stream.end()));
-        ops.emplace_back(op, cur_pos);
+
+
+        std::string op = JT(op_id, it, instr_stream.end());
     }
 
-    std::size_t current_cs_position = 0;
-    for(auto it = ops.begin(); it != ops.end(); ++it) {
-        current_cs_position = (*it).second;
-        auto label_num = jmp_table[current_cs_position];
-
-        std::cout << (*it).first << '\n';
-        if(label_num != std::numeric_limits<std::size_t>::max()) {
-            std::cout << "label" << label_num << ":\n";
-        }
-
-    }
+//    std::size_t current_cs_position = 0;
+//    for(auto it = ops.begin(); it != ops.end(); ++it) {
+//        current_cs_position = (*it).second;
+//        auto label_num = jmp_table[current_cs_position];
+//
+//        std::cout << (*it).first << '\n';
+//        if(label_num != std::numeric_limits<std::size_t>::max()) {
+//            std::cout << "label" << label_num << ":\n";
+//        }
+//
+//    }
 
     return {};
 }
 
 }
-
+    

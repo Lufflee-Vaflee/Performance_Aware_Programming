@@ -7,13 +7,18 @@
 #include <sstream>
 #include <cstdint>
 
+#include "opcode.hpp"
+
 namespace decode {
 
-using instr_stream_t = std::vector<char>;
+using data_stream_t = std::vector<char>;
 using stream_it_t = std::vector<char>::iterator;
 
-std::string decode(instr_stream_t&);
-instr_stream_t load_input_stream(std::fstream& stream);
+using opcode_stream_t = std::vector<opcode::decoded>;
+using opcode_it_t = std::vector<opcode::decoded>::iterator;
+
+opcode_stream_t decode(data_stream_t&);
+data_stream_t load_input_stream(std::fstream& stream);
 
 using decode_inst_t = std::pair<std::string, int>;
 

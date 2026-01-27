@@ -7,6 +7,8 @@
 
 namespace decode::opcode {
 
+
+
 using string_repr_t = char[16];
 
 struct bit3mask {
@@ -104,6 +106,22 @@ struct bit3mask {
     uint16_t and_mask = 0;
 };
 
+using ID = uint32_t;
+
+struct match_table_entry {
+    constexpr match_table_entry() = default;
+    constexpr match_table_entry(bit3mask mask, ID index) :
+        m_mask(mask),
+        m_index(index) {}
+
+    bit3mask m_mask;
+    ID m_index;
+
+    constexpr operator ID() const {
+        return m_index;
+    }
+};
+
 constexpr int constexpr_stoi(std::string_view str) {
     std::size_t i = 0;
 
@@ -119,6 +137,26 @@ constexpr int constexpr_stoi(std::string_view str) {
     return value;
 }
 
+constexpr match_table_entry operator"" _bit3(const char* mask, std::size_t len) {
+    string_repr_t arr;
+    for(std::size_t i = 0; i < 16; ++i)
+        arr[i] = mask[i];
+
+    if(mask[16] != '_') {
+        throw "dont panic";
+    }
+
+    uint8_t index = 0;
+    for(std::size_t i = 0; i < 7; ++i) {
+        if(arr[i] == '1' && i < 3) {
+            index += 1;
+        }
+        index <<= 1;
+    }
+
+    index += constexpr_stoi(&mask[17]);
+    return match_table_entry { bit3mask(arr), index };
+}
 
 }
 

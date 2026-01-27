@@ -7,6 +7,17 @@
 
 constexpr const char* head = "bits 16\n\n";
 
+decode::data_stream_t load_input_stream(std::fstream& stream) {
+    std::vector<char> result;
+    stream.seekg(0, std::ios::end);
+    auto fsize = stream.tellg();
+    stream.seekg(0, std::ios::beg);
+    result.resize(fsize);
+
+    stream.read(static_cast<char*>(result.data()), fsize);
+    return result;
+}
+
 int main(int argc, char** argv) {
     if(argc != 2) {
         std::cout << "Usage: 8086sim [path_to_encoded_binary]\n";
@@ -18,7 +29,7 @@ int main(int argc, char** argv) {
         return 0;
     }
 
-    auto instr_stream = decode::load_input_stream(binary);
+    auto instr_stream = load_input_stream(binary);
 
     std::cout << head;
     try {

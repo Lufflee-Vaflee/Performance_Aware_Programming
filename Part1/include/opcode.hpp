@@ -1,26 +1,11 @@
 #pragma once
 
 #include <cassert>
+#include <variant>
 
 #include "bit3mask.hpp"
 
 namespace decode::opcode {
-
-using ID = uint32_t;
-
-struct match_table_entry {
-    constexpr match_table_entry() = default;
-    constexpr match_table_entry(bit3mask mask, ID index) :
-        m_mask(mask),
-        m_index(index) {}
-
-    bit3mask m_mask;
-    ID m_index;
-
-    constexpr operator ID() const {
-        return m_index;
-    }
-};
 
 enum class MOD : uint8_t {
     MEM_NO_DISPLACMENT  = 0b00,
@@ -150,26 +135,27 @@ unpacked_bitmap unpack_bitmap(uint16_t data) {
     return result;
 }
 
-constexpr match_table_entry operator"" _bit3(const char* mask, std::size_t len) {
-    string_repr_t arr;
-    for(std::size_t i = 0; i < 16; ++i)
-        arr[i] = mask[i];
+//also any that could be decribed as "just a num"
+using immediate = int16_t;
 
-    if(mask[16] != '_') {
-        throw "dont panic";
-    }
+//direct addr also
+struct displacment_mem {
+    uint16_t displacment;
+    DIS reg;
+};
 
-    uint8_t index = 0;
-    for(std::size_t i = 0; i < 7; ++i) {
-        if(arr[i] == '1' && i < 3) {
-            index += 1;
-        }
-        index <<= 1;
-    }
+static_assert(sizeof(displacment_mem) == 4);
 
-    index += constexpr_stoi(&mask[17]);
-    return match_table_entry { bit3mask(arr), index };
-}
+using arg_t = std::variant<REG, immediate, displacment_mem>;
+static_assert(sizeof(arg_t) == 6);
+
+struct decoded {
+    ID id;
+    arg_t LHS;
+    arg_t RHS;
+};
+
+static_assert(sizeof(decoded) == 16);
 
 }
 

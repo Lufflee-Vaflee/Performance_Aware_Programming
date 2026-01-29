@@ -137,7 +137,7 @@ constexpr int constexpr_stoi(std::string_view str) {
     return value;
 }
 
-constexpr match_table_entry operator"" _bit3(const char* mask, std::size_t len) {
+constexpr match_table_entry operator""_bit3(const char* mask, std::size_t len) {
     string_repr_t arr;
     for(std::size_t i = 0; i < 16; ++i)
         arr[i] = mask[i];

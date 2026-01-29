@@ -19,8 +19,8 @@ decode::data_stream_t load_input_stream(std::fstream& stream) {
 }
 
 int main(int argc, char** argv) {
-    if(argc != 2) {
-        std::cout << "Usage: 8086sim [path_to_encoded_binary]\n";
+    if(argc < 2) {
+        std::cout << "Usage: 8086sim [path_to_encoded_binary] (optional)-lex\n";
     }
 
     std::fstream binary(argv[1], std::ios_base::in | std::ios_base::binary);

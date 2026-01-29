@@ -38,31 +38,31 @@ opcode::decoded decode(stream_it_t& begin, stream_it_t end) {
     auto op_id = peek_opcode_ident(begin);
     switch (op_id) {
         case MOV_RM_R:
-            std::tie(op, advance) = generalized_parse<MOV_RM_R, decode_reg, decode_RM>(begin, end);
-//        case MOV_I_RM:
-//            std::tie(str, advance) = MOV::I_RM(begin, end); break;
-//        case MOV_I_R:
-//            std::tie(str, advance) = MOV::DI_R(begin, end); break;
-//        case MOV_M_A:
-//            std::tie(str, advance) = MOV::M_A(begin, end); break;
-//        case ADD_RM_R:
-//            std::tie(str, advance) = ADD::RM_R(begin, end); break;
-//        case ADD_I_RM:
-//            std::tie(str, advance) = ADD::I_RM(begin, end); break;
-//        case ADD_I_A:
-//            std::tie(str, advance) = ADD::I_A(begin, end); break;
-//        case SUB_RM_R:
-//            std::tie(str, advance) = SUB::RM_R(begin, end); break;
-//        case SUB_I_RM:
-//            std::tie(str, advance) = SUB::I_RM(begin, end); break;
-//        case SUB_I_A:
-//            std::tie(str, advance) = SUB::I_A(begin, end); break;
-//        case CMP_RM_R:
-//            std::tie(str, advance) = CMP::RM_R(begin, end); break;
-//        case CMP_I_RM:
-//            std::tie(str, advance) = CMP::I_RM(begin, end); break;
-//        case CMP_I_A:
-//            std::tie(str, advance) = CMP::I_A(begin, end); break;
+            std::tie(op, advance) = generalized_decode<MOV_RM_R, decode_reg, decode_RM>     (begin, end); break;
+        case MOV_I_RM:
+            std::tie(op, advance) = generalized_decode<MOV_I_RM, decode_RM,  decode_WDATA>  (begin, end); break;
+        case MOV_I_R:
+            std::tie(op, advance) = generalized_decode<MOV_I_R,  decode_reg, decode_WDATA>  (begin, end); break;
+        case MOV_M_A:
+            std::tie(op, advance) = generalized_decode<MOV_M_A,  decode_AX,  decode_WDATA>  (begin, end); break;
+        case ADD_RM_R:
+            std::tie(op, advance) = generalized_decode<ADD_RM_R, decode_reg, decode_RM>     (begin, end); break;
+        case ADD_I_RM:
+            std::tie(op, advance) = generalized_decode<ADD_I_RM, decode_RM,  decode_WDATA>  (begin, end); break;
+        case ADD_I_A:
+            std::tie(op, advance) = generalized_decode<ADD_I_A,  decode_AX,  decode_WDATA>  (begin, end); break;
+        case SUB_RM_R:
+            std::tie(op, advance) = generalized_decode<SUB_RM_R, decode_reg, decode_RM>     (begin, end); break;
+        case SUB_I_RM:
+            std::tie(op, advance) = generalized_decode<SUB_I_RM, decode_RM,  decode_WDATA>  (begin, end); break;
+        case SUB_I_A:
+            std::tie(op, advance) = generalized_decode<SUB_I_A,  decode_AX,  decode_WDATA>  (begin, end); break;
+        case CMP_RM_R:
+            std::tie(op, advance) = generalized_decode<CMP_RM_R, decode_reg, decode_RM>     (begin, end); break;
+        case CMP_I_RM:
+            std::tie(op, advance) = generalized_decode<CMP_I_RM, decode_RM,  decode_WDATA>  (begin, end); break;
+        case CMP_I_A:
+            std::tie(op, advance) = generalized_decode<CMP_I_A,  decode_AX,  decode_WDATA>  (begin, end); break;
 //        case JZ:
 //            std::tie(str, advance) = jmp_table.decode_conditional_jmp("JZ", start, begin, end); break;
 //        case JL:

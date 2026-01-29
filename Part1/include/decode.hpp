@@ -148,6 +148,10 @@ inline std::pair<opcode::arg_t, int> decode_reg(opcode::unpacked_bitmap bitmap, 
     return { *(bitmap.reg), 0 };
 }
 
+inline std::pair<opcode::arg_t, int> decode_AX(opcode::unpacked_bitmap bitmap, stream_it_t begin, stream_it_t end) {
+    return { opcode::REG::AL_AX, 0 };
+}
+
 template <typename F>
 concept Delegator =
     std::invocable<
@@ -170,7 +174,7 @@ template <opcode::ID id, auto D1, auto D2>
 requires(
     Delegator<decltype(D1)> &&
     Delegator<decltype(D2)>)
-decode_inst_t generalized_parse(stream_it_t begin, stream_it_t end) {
+decode_inst_t generalized_decode(stream_it_t begin, stream_it_t end) {
     using bitmask_t = opcode::get_bitmap<id>::t;
     bitmask_t packed;
     raw_deserialize<bitmask_t>(packed, begin, end);

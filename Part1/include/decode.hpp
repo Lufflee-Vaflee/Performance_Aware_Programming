@@ -14,78 +14,13 @@ namespace decode {
 using data_stream_t = std::vector<char>;
 using stream_it_t = std::vector<char>::iterator;
 
-using opcode_stream_t = std::vector<opcode::decoded>;
-using opcode_it_t = std::vector<opcode::decoded>::iterator;
+opcode::decoded decode(stream_it_t& begin, stream_it_t end);
 
-opcode_stream_t decode(data_stream_t&);
+//opcode_stream_t decode(data_stream_t&);
 data_stream_t load_input_stream(std::fstream& stream);
 
-using decode_inst_t = std::pair<std::string, int>;
-
-enum class MOD : uint8_t {
-    MEM_NO_DISPLACMENT  = 0b00,
-    MEM_8_DISPLACMENT   = 0b01,
-    MEM_16_DISPLACMENT  = 0b10,
-    REGISTER            = 0b11
-};
-
-enum class REG : uint8_t {
-    AL_AX = 0b000,
-    CL_CX = 0b001,
-    DL_DX = 0b010,
-    BL_BX = 0b011,
-    AH_SP = 0b100,
-    CH_BP = 0b101,
-    DH_SI = 0b110,
-    BH_DI = 0b111,
-};
-
-enum class ADDR_CALC : uint8_t {
-    BX_SI   = 0b000,
-    BX_DI   = 0b001,
-    BP_SI   = 0b010,
-    BP_DI   = 0b011,
-    SI      = 0b100,
-    DI      = 0b101,
-    DIRECT  = 0b110,
-    BX      = 0b111,
-};
-
-
-using D = bool;
-using W = bool;
-using S = bool;
-
-struct RM_R_D { 
-    W m_W : 1;
-    D m_D : 1;
-    uint8_t pad : 6; //opcode - unused
-
-    uint8_t m_RM : 3;
-    REG m_REG : 3;
-    MOD m_MOD : 2;
-};
-
-static_assert(sizeof(RM_R_D) == 2);
-
-struct RM_R_S {
-    W m_W : 1;
-    S m_S : 1;
-    uint8_t pad : 6; //opcode - unused
-
-    uint8_t m_RM : 3;
-    uint8_t pad2 : 3; // reg unused
-    MOD m_MOD : 2;
-};
-
-static_assert(sizeof(RM_R_S) == 2);
-
-struct A { 
-    W m_W : 1;
-    uint8_t pad : 7; //opcode - unused
-};
-
-static_assert(sizeof(A) == 1);
+using decode_inst_t = std::pair<opcode::decoded, int>;
+using decode_arg_t =  std::pair<opcode::arg_t, int>;
 
 inline std::string format_displacment(int16_t displacment) {
     std::stringstream result;
@@ -94,13 +29,14 @@ inline std::string format_displacment(int16_t displacment) {
 }
 
 
-inline std::string format_immediate(int16_t immediate, W w) {
+inline std::string format_immediate(int16_t immediate, opcode::W w) {
     std::stringstream result;
     result << (w ? "word " : "byte ") << immediate;
     return result.str();
 }
 
-inline std::string decode_REG(REG const& reg, W const& w) noexcept {
+inline std::string decode_REG(opcode::REG const& reg, opcode::W const& w) noexcept {
+    using namespace opcode;
     switch(reg) {
         case REG::AL_AX: return w ? "AX" : "AL";
         case REG::CL_CX: return w ? "CX" : "CL";
@@ -115,16 +51,17 @@ inline std::string decode_REG(REG const& reg, W const& w) noexcept {
     std::unreachable();
 }
 
-inline std::string decode_ADDR_CALC(ADDR_CALC const& calc) noexcept {
+inline std::string decode_ADDR_CALC(opcode::DIS const& calc) noexcept {
+    using namespace opcode;
     switch(calc) {
-        case ADDR_CALC::BX_SI : return "BX + SI";
-        case ADDR_CALC::BX_DI : return "BX + DI";
-        case ADDR_CALC::BP_SI : return "BP + SI";
-        case ADDR_CALC::BP_DI : return "BP + DI";
-        case ADDR_CALC::SI    : return "SI";
-        case ADDR_CALC::DI    : return "DI";
-        case ADDR_CALC::DIRECT: return "BP";
-        case ADDR_CALC::BX    : return "BX";
+        case DIS::BX_SI : return "BX + SI";
+        case DIS::BX_DI : return "BX + DI";
+        case DIS::BP_SI : return "BP + SI";
+        case DIS::BP_DI : return "BP + DI";
+        case DIS::SI    : return "SI";
+        case DIS::DI    : return "DI";
+        case DIS::DIRECT: return "BP";
+        case DIS::BX    : return "BX";
     }
 
     std::unreachable();
@@ -147,46 +84,40 @@ void raw_deserialize(T& dest, stream_it_t begin, stream_it_t end) {
     return;
 }
 
-template<typename T>
-decode_inst_t decode_DISPLACMENT(T inst, stream_it_t begin, stream_it_t end) {
-    std::stringstream str;
-    std::string ARG;
-    int16_t displacment;
+inline std::pair<opcode::arg_t, int> decode_RM(opcode::unpacked_bitmap bitmap, stream_it_t begin, stream_it_t end) {
+    using namespace opcode;
+    displacment_mem ARG;
 
-    switch (inst.m_MOD) {
+    assert(bitmap.mod.has_value());
+    assert(bitmap.rm.has_value());
+    switch (*bitmap.mod) {
         case MOD::REGISTER:
-            ARG = decode_REG(REG(inst.m_RM), inst.m_W);
-            return { ARG, 0 };
+            return { REG(*(bitmap.rm)), 0 };
         case MOD::MEM_NO_DISPLACMENT:
-            ARG = decode_ADDR_CALC(ADDR_CALC(inst.m_RM));
-            if(ARG == "BP") {
-                raw_deserialize<int16_t>(displacment, begin + 2, end);
-                str << "[" << displacment << ']';
-                ARG = str.str();
-                return { ARG, 2 };
+            if((DIS(*(bitmap.rm))) == DIS::DIRECT) {
+                direct_addr addr;
+                raw_deserialize<uint16_t>(addr, begin, end);
+                return { addr , 2 };
             }
 
-            str << "[" << ARG << ']';
-            ARG = str.str();
-            return { ARG, 0 };
+            return { DIS(*(bitmap.rm)), 0 };
         case MOD::MEM_8_DISPLACMENT:
-            ARG = decode_ADDR_CALC(ADDR_CALC(inst.m_RM));
-            displacment = *(begin + 2);
-            str << '[' << ARG << format_displacment(displacment) << ']';
-            ARG = str.str();
+            ARG = { *(begin), DIS(*(bitmap.rm)) };
             return { ARG, 1 };
         case MOD::MEM_16_DISPLACMENT:
-            ARG = decode_ADDR_CALC(ADDR_CALC(inst.m_RM));
-            raw_deserialize<int16_t>(displacment, begin + 2, end);
-            str << '[' << ARG << format_displacment(displacment) << ']';
-            ARG = str.str();
+            raw_deserialize<int16_t>(ARG.displacment, begin, end);
+            ARG.reg = *(bitmap.rm);
             return { ARG, 2 };
     }
 }
 
-template<typename T>
-std::pair<T, int> decode_WDATA(W w, S s, stream_it_t begin, stream_it_t end) {
-    int16_t arg = 0;
+inline std::pair<opcode::arg_t, int> decode_WDATA(opcode::unpacked_bitmap bitmap, stream_it_t begin, stream_it_t end) {
+    using namespace opcode;
+    immediate arg = 0;
+
+    assert(bitmap.w.has_value());
+    auto w = *(bitmap.w);
+    auto s = bitmap.s.has_value() ? *(bitmap.s) : 0;
 
     int S_W = s;
     S_W <<= 1;
@@ -194,9 +125,9 @@ std::pair<T, int> decode_WDATA(W w, S s, stream_it_t begin, stream_it_t end) {
 
     switch(S_W) {
     case 0:
-        return {*(begin), 1};
+        return { *(begin), 1 };
     case 1:
-        raw_deserialize<int16_t>(arg, begin, end);
+        raw_deserialize<immediate>(arg, begin, end);
         return { arg , 2 };
     case 3:
         int8_t data = *(begin);
@@ -210,6 +141,52 @@ std::pair<T, int> decode_WDATA(W w, S s, stream_it_t begin, stream_it_t end) {
     }
 
     std::unreachable();
+}
+
+inline std::pair<opcode::arg_t, int> decode_reg(opcode::unpacked_bitmap bitmap, stream_it_t begin, stream_it_t end) {
+    assert(bitmap.reg.has_value());
+    return { *(bitmap.reg), 0 };
+}
+
+template <typename F>
+concept Delegator =
+    std::invocable<
+        F,
+        opcode::unpacked_bitmap,
+        stream_it_t,
+        stream_it_t
+    > &&
+    std::same_as<
+        std::invoke_result_t<
+        F,
+        opcode::unpacked_bitmap,
+        stream_it_t,
+        stream_it_t
+        >,
+        std::pair<opcode::arg_t, int>
+    >;
+
+template <opcode::ID id, auto D1, auto D2>
+requires(
+    Delegator<decltype(D1)> &&
+    Delegator<decltype(D2)>)
+decode_inst_t generalized_parse(stream_it_t begin, stream_it_t end) {
+    using bitmask_t = opcode::get_bitmap<id>::t;
+    bitmask_t packed;
+    raw_deserialize<bitmask_t>(packed, begin, end);
+
+    opcode::unpacked_bitmap unpacked = unpack_bitmap<bitmask_t>(packed);
+    begin += sizeof(bitmask_t);
+    decode_arg_t LHS_d = D1(unpacked, begin, end); 
+    begin += LHS_d.second;
+    decode_arg_t RHS_d = D2(unpacked, begin, end);
+
+    int size = sizeof(bitmask_t) + LHS_d.second + RHS_d.second;
+    if constexpr (opcode::details::has_d<bitmask_t>) {
+        std::swap(LHS_d.first, RHS_d.first);
+    }
+
+    return { { id, LHS_d.first, RHS_d.first}, size };
 }
 
 }

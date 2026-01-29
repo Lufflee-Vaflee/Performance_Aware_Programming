@@ -33,7 +33,7 @@ int main(int argc, char** argv) {
 
     std::cout << head;
     try {
-        decode::decode(instr_stream);
+        //decode::decode(instr_stream.begin(), instr_stream.end());
     } catch(const char * str) {
         std::cout << str << '\n';
     } catch(...) {

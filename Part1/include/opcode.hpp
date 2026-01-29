@@ -2,6 +2,9 @@
 
 #include <cassert>
 #include <variant>
+#include <optional>
+#include <type_traits>
+#include <limits>
 
 #include "bit3mask.hpp"
 
@@ -36,8 +39,8 @@ enum class DIS : uint8_t {
     BX      = 0b111,
 };
 
-struct RW {
-    uint8_t rw = 0;
+struct RM {
+    uint8_t rw;
 
     operator DIS() {
         return static_cast<DIS>(rw);
@@ -70,6 +73,9 @@ using S = bool;
 using V = bool;
 using Z = bool;
 
+static_assert(sizeof(bool) == 1);
+
+namespace details {
 template <typename T>
 concept has_d =     requires(T t) { t.d; };
 template <typename T>
@@ -87,66 +93,129 @@ concept has_reg =   requires(T t) { t.reg; };
 template <typename T>
 concept has_rw =    requires(T t) { t.rw; };
 
+template<typename T>
+struct optionale_selector {
+    //unimplemented
+    static_assert(false);
+    using U = void;
+};
+
+template<> 
+struct optionale_selector<bool> {
+    using U = uint8_t;
+    static constexpr U v = 3;
+};
+
+template<typename T>
+requires(std::is_enum_v<T>)
+struct optionale_selector<T> {
+    using U = std::underlying_type_t<T>;
+    static constexpr U v = std::numeric_limits<U>::max();
+};
+
+}
+
+template<typename T, typename U = details::optionale_selector<T>::U, U nulloption = details::optionale_selector<T>::v>
+struct optionale_base {
+    static_assert(sizeof(T) == sizeof(U));
+    static_assert(alignof(T) == alignof(U));
+
+    optionale_base() {
+        value.u = nulloption;
+    }
+
+    union data {
+        T t;
+        U u;
+    };
+
+    bool has_value() {
+        auto u = std::bit_cast<U>(value);
+        if(u == nulloption) {
+            return false;
+        }
+        
+        value.t = std::bit_cast<T>(u);
+        return true;
+    }
+
+    void reset() {
+        value.u = nulloption;
+    }
+
+    T& operator*() {
+        return value.t;
+    }
+
+   private:
+    data value;
+};
+
+template<typename T>
+struct optionale : optionale_base<T> {};
+
+static constexpr uint8_t test = 255;
+
 // zero-initialized
 struct unpacked_bitmap {
-    D d = 0;
-    W w = 0;
-    S s = 0;
-    V v = 0;
-    Z z = 0;
-    MOD mod = MOD::MEM_NO_DISPLACMENT;
-    REG reg = REG::AL_AX;
-    RW  rw;
+    optionale<D> d;
+    optionale<W> w;
+    optionale<S> s;
+    optionale<V> v;
+    optionale<Z> z;
+    optionale<REG> reg;
+    optionale<MOD> mod;
+    optionale_base<RM, uint8_t, test>  rm;
 };
 
 static_assert(sizeof(unpacked_bitmap) == 8);
 
-template<ID id>
-unpacked_bitmap unpack_bitmap(uint16_t data) {
-    using bitmap_t = get_bitmap<id>::bitmap;
+template<typename packed>
+unpacked_bitmap unpack_bitmap(packed data) {
+    using namespace details;
     unpacked_bitmap result;
-    bitmap_t bitmap = std::bit_cast<bitmap_t>(data);
 
-    if constexpr (has_d<bitmap_t>) {
-        result.d   = bitmap.d;
+    if constexpr (has_d<packed>) {
+        *(result.d)   = data.d;
     }
-    if constexpr (has_w<bitmap_t>) {
-        result.w   = bitmap.w;
+    if constexpr (has_w<packed>) {
+        *(result.w)   = data.w;
     }
-    if constexpr (has_s<bitmap_t>) {
-        result.s   = bitmap.s;
+    if constexpr (has_s<packed>) {
+        *(result.s)   = data.s;
     }
-    if constexpr (has_v<bitmap_t>) {
-        result.v   = bitmap.v;
+    if constexpr (has_v<packed>) {
+        *(result.v)   = data.v;
     }
-    if constexpr (has_z<bitmap_t>) {
-        result.z   = bitmap.z;
+    if constexpr (has_z<packed>) {
+        *(result.z)   = data.z;
     }
-    if constexpr (has_mod<bitmap_t>) {
-        result.mod = bitmap.mod;
+    if constexpr (has_mod<packed>) {
+        *(result.mod) = data.mod;
     }
-    if constexpr (has_reg<bitmap_t>) {
-        result.reg = bitmap.reg;
+    if constexpr (has_reg<packed>) {
+        *(result.reg) = data.reg;
     }
-    if constexpr (has_rw<bitmap_t>) {
-        result.rw  = bitmap.rw;
+    if constexpr (has_rw<packed>) {
+        *(result.rm)  = data.rw;
     }
 
     return result;
 }
 
-//also any that could be decribed as "just a num"
+//also any that could be decribed as "just a num, including addresses"
 using immediate = int16_t;
 
-//direct addr also
+using direct_addr = uint16_t;
+
 struct displacment_mem {
-    uint16_t displacment;
+    int16_t displacment;
     DIS reg;
 };
 
 static_assert(sizeof(displacment_mem) == 4);
 
-using arg_t = std::variant<REG, immediate, displacment_mem>;
+using arg_t = std::variant<REG, DIS, immediate, displacment_mem, direct_addr>;
 static_assert(sizeof(arg_t) == 6);
 
 struct decoded {

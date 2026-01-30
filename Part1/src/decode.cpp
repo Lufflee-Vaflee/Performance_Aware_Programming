@@ -1,20 +1,12 @@
 #include "decode.hpp"
 
 #include <cstring>
+#include <utility>
 
 #include "J_.hpp"
 #include "LT.hpp"
-#include "JT.hpp"
 
 namespace decode {
-
-//std::string to_lower(std::string const& data) {
-//    std::string result;
-//    result.resize(data.size());
-//     std::transform(data.cbegin(), data.cend(), result.begin(),
-//        [](unsigned char c){ return std::tolower(c); });
-//     return result;
-//}
 
 //note: unsafe, doesnt check for end
 opcode::ID peek_opcode_ident(decode::stream_it_t begin) {
@@ -27,8 +19,135 @@ opcode::ID peek_opcode_ident(decode::stream_it_t begin) {
     return lt[opcode];
 }
 
-static conditional_jmp_table jmp_table;
-stream_it_t start;
+template<typename T>
+//TODO add POD restriction
+void raw_deserialize(T& dest, stream_it_t begin, stream_it_t end) {
+    char* c_dest = reinterpret_cast<char*>(&dest);
+    stream_it_t c_end = begin + sizeof(T);
+    assert(end >= c_end);
+
+    std::size_t i = 0;
+    while(begin != c_end) {
+        c_dest[i] = *begin;
+        begin++;
+        i++;
+    }
+
+    return;
+}
+
+inline std::pair<opcode::arg_t, int> decode_RM(opcode::unpacked_bitmap bitmap, stream_it_t begin, stream_it_t end) {
+    using namespace opcode;
+    displacment_mem ARG;
+
+    assert(bitmap.mod.has_value());
+    assert(bitmap.rm.has_value());
+    switch (*bitmap.mod) {
+        case MOD::REGISTER:
+            return { REG(*(bitmap.rm)), 0 };
+        case MOD::MEM_NO_DISPLACMENT:
+            if((DIS(*(bitmap.rm))) == DIS::DIRECT) {
+                direct_addr addr;
+                raw_deserialize<uint16_t>(addr, begin, end);
+                return { addr , 2 };
+            }
+
+            return { DIS(*(bitmap.rm)), 0 };
+        case MOD::MEM_8_DISPLACMENT:
+            ARG = { *(begin), DIS(*(bitmap.rm)) };
+            return { ARG, 1 };
+        case MOD::MEM_16_DISPLACMENT:
+            raw_deserialize<int16_t>(ARG.displacment, begin, end);
+            ARG.reg = *(bitmap.rm);
+            return { ARG, 2 };
+    }
+
+    std::unreachable();
+}
+
+inline std::pair<opcode::arg_t, int> decode_WDATA(opcode::unpacked_bitmap bitmap, stream_it_t begin, stream_it_t end) {
+    using namespace opcode;
+    immediate arg = 0;
+
+    assert(bitmap.w.has_value());
+    auto w = *(bitmap.w);
+    auto s = bitmap.s.has_value() ? *(bitmap.s) : 0;
+
+    int S_W = s;
+    S_W <<= 1;
+    S_W += w;
+
+    switch(S_W) {
+    case 0:
+        return { *(begin), 1 };
+    case 1:
+        raw_deserialize<immediate>(arg, begin, end);
+        return { arg , 2 };
+    case 3:
+        int8_t data = *(begin);
+        if(data >= 0) {
+            return { data, 1 };
+        } else {
+            arg = data;
+            arg |= 0xFF00;
+            return { arg, 1 };
+        }
+    }
+
+    std::unreachable();
+}
+
+inline std::pair<opcode::arg_t, int> decode_reg(opcode::unpacked_bitmap bitmap, stream_it_t begin, stream_it_t end) {
+    assert(bitmap.reg.has_value());
+    return { *(bitmap.reg), 0 };
+}
+
+inline std::pair<opcode::arg_t, int> decode_AX(opcode::unpacked_bitmap bitmap, stream_it_t begin, stream_it_t end) {
+    return { opcode::REG::AL_AX, 0 };
+}
+
+template <typename F>
+concept Delegator =
+    std::invocable<
+        F,
+        opcode::unpacked_bitmap,
+        stream_it_t,
+        stream_it_t
+    > &&
+    std::same_as<
+        std::invoke_result_t<
+        F,
+        opcode::unpacked_bitmap,
+        stream_it_t,
+        stream_it_t
+        >,
+        std::pair<opcode::arg_t, int>
+    >;
+
+template <opcode::ID id, auto D1, auto D2>
+requires(
+    Delegator<decltype(D1)> &&
+    Delegator<decltype(D2)>)
+decode_inst_t generalized_decode(stream_it_t begin, stream_it_t end) {
+    using bitmask_t = opcode::get_bitmap<id>::t;
+    bitmask_t packed;
+    raw_deserialize<bitmask_t>(packed, begin, end);
+
+    opcode::unpacked_bitmap unpacked = unpack_bitmap<bitmask_t>(packed);
+    begin += sizeof(bitmask_t);
+    decode_arg_t LHS_d = D1(unpacked, begin, end); 
+    begin += LHS_d.second;
+    decode_arg_t RHS_d = D2(unpacked, begin, end);
+
+    int size = sizeof(bitmask_t) + LHS_d.second + RHS_d.second;
+    if constexpr (opcode::details::has_d<bitmask_t>) {
+        std::swap(LHS_d.first, RHS_d.first);
+    }
+
+    return { { id, LHS_d.first, RHS_d.first}, size };
+}
+
+
 
 opcode::decoded decode(stream_it_t& begin, stream_it_t end) {
     using namespace opcode;
@@ -63,46 +182,16 @@ opcode::decoded decode(stream_it_t& begin, stream_it_t end) {
             std::tie(op, advance) = generalized_decode<CMP_I_RM, decode_RM,  decode_WDATA>  (begin, end); break;
         case CMP_I_A:
             std::tie(op, advance) = generalized_decode<CMP_I_A,  decode_AX,  decode_WDATA>  (begin, end); break;
-//        case JZ:
-//            std::tie(str, advance) = jmp_table.decode_conditional_jmp("JZ", start, begin, end); break;
-//        case JL:
-//            std::tie(str, advance) = jmp_table.decode_conditional_jmp("JL", start, begin, end); break;
-//        case JLE:
-//            std::tie(str, advance) = jmp_table.decode_conditional_jmp("JLE", start, begin, end); break;
-//        case JB:
-//            std::tie(str, advance) = jmp_table.decode_conditional_jmp("JB", start, begin, end); break;
-//        case JBE:
-//            std::tie(str, advance) = jmp_table.decode_conditional_jmp("JBE", start, begin, end); break;
-//        case JP:
-//            std::tie(str, advance) = jmp_table.decode_conditional_jmp("JP", start, begin, end); break;
-//        case JO:
-//            std::tie(str, advance) = jmp_table.decode_conditional_jmp("JO", start, begin, end); break;
-//        case JS:
-//            std::tie(str, advance) = jmp_table.decode_conditional_jmp("JS", start, begin, end); break;
-//        case JNE:
-//            std::tie(str, advance) = jmp_table.decode_conditional_jmp("JNE", start, begin, end); break;
-//        case JNL:
-//            std::tie(str, advance) = jmp_table.decode_conditional_jmp("JNL", start, begin, end); break;
-//        case JG:
-//            std::tie(str, advance) = jmp_table.decode_conditional_jmp("JG", start, begin, end); break;
-//        case JAE:
-//            std::tie(str, advance) = jmp_table.decode_conditional_jmp("JAE", start, begin, end); break;
-//        case JA:
-//            std::tie(str, advance) = jmp_table.decode_conditional_jmp("JA", start, begin, end); break;
-//        case JPO:
-//            std::tie(str, advance) = jmp_table.decode_conditional_jmp("JPO", start, begin, end); break;
-//        case JNO:
-//            std::tie(str, advance) = jmp_table.decode_conditional_jmp("JNO", start, begin, end); break;
-//        case JNS:
-//            std::tie(str, advance) = jmp_table.decode_conditional_jmp("JNS", start, begin, end); break;
-//        case LOOP:
-//            std::tie(str, advance) = jmp_table.decode_conditional_jmp("LOOP", start, begin, end); break;
-//        case LOOPZ:
-//            std::tie(str, advance) = jmp_table.decode_conditional_jmp("LOOPZ", start, begin, end); break;
-//        case LOOPNZ:
-//            std::tie(str, advance) = jmp_table.decode_conditional_jmp("LOOPNZ", start, begin, end); break;
-//        case JCXZ:
-//            std::tie(str, advance) = jmp_table.decode_conditional_jmp("JCXZ", start, begin, end); break;
+        case J:
+            std::tie(op, advance) = decode_conditional_j(begin, end); break;
+        case LOOP:
+            std::tie(op, advance) = decode_conditional_j<LOOP>(begin, end); break;
+        case LOOPZ:
+            std::tie(op, advance) = decode_conditional_j<LOOPZ>(begin, end); break;
+        case LOOPNZ:
+            std::tie(op, advance) = decode_conditional_j<LOOPNZ>(begin, end); break;
+        case JCXZ:
+            std::tie(op, advance) = decode_conditional_j<JCXZ>(begin, end); break;
         default:
             throw "unimplemented";
     }
@@ -110,39 +199,6 @@ opcode::decoded decode(stream_it_t& begin, stream_it_t end) {
     begin += advance;
     return op;
 }
-
-//opcode_stream_t decode(data_stream_t& instr_stream) {
-//    opcode_stream_t result;
-//    result.reserve(instr_stream.size() / 6);
-
-//    //insert dummy byte to remove check at peek opcode
-//    auto size = instr_stream.size();
-//    instr_stream.emplace_back('0');
-//
-//    start = instr_stream.begin();
-//    auto end = instr_stream.end();
-//
-//    for(auto it = start; it != end;) {
-//        auto op_id = peek_opcode_ident(it);
-//        auto cur_pos = it - instr_stream.begin();
-//
-//
-//        std::string op = JT(op_id, it, instr_stream.end());
-//    }
-
-//    std::size_t current_cs_position = 0;
-//    for(auto it = ops.begin(); it != ops.end(); ++it) {
-//        current_cs_position = (*it).second;
-//        auto label_num = jmp_table[current_cs_position];
-//
-//        std::cout << (*it).first << '\n';
-//        if(label_num != std::numeric_limits<std::size_t>::max()) {
-//            std::cout << "label" << label_num << ":\n";
-//        }
-//
-//    }
-//    return {};
-//}
 
 }
 

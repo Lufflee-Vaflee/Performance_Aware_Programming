@@ -6,20 +6,24 @@
 #include "decode.hpp"
 
 constexpr const char* head = "bits 16\n\n";
+bool lex_mod = false;
+//temporary measure to remove uneescesarry bouandary checks, until state model is made
+constexpr size_t safe_bytes = 6;
 
 decode::data_stream_t load_input_stream(std::fstream& stream) {
     std::vector<char> result;
     stream.seekg(0, std::ios::end);
-    auto fsize = stream.tellg();
+    auto fsize = static_cast<std::size_t>(stream.tellg());
     stream.seekg(0, std::ios::beg);
-    result.resize(fsize);
+    //add few dummy bytes to ensure that 
+    result.resize(fsize + safe_bytes);
 
     stream.read(static_cast<char*>(result.data()), fsize);
     return result;
 }
 
 int main(int argc, char** argv) {
-    if(argc < 2) {
+    if(argc < 2 || argc >= 4) {
         std::cout << "Usage: 8086sim [path_to_encoded_binary] (optional)-lex\n";
     }
 
@@ -29,7 +33,11 @@ int main(int argc, char** argv) {
         return 0;
     }
 
-    auto instr_stream = load_input_stream(binary);
+    if(argc == 3 && strncmp(argv[2], "-lex", 4)) {
+        lex_mod = true;
+    }
+
+    auto mem = load_input_stream(binary);
 
     std::cout << head;
     try {

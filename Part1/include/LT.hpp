@@ -5,9 +5,9 @@
 
 #include <array>
 
-namespace decode::opcode {
+namespace opcode {
 // OPCODE TABLE
-//                         index_bits       index_addition
+//                         index_bits       index_addition(5 bit)
 //                         |||              ||
 constexpr auto MOV_RM_R = "100010xxxxxxxxxx_0"_bit3;
 SET_BITMAP(MOV_RM_R, W w : 1; D d : 1; B b : 6; B rm : 3; REG reg : 3; MOD mod : 2;)
@@ -48,6 +48,10 @@ SET_BITMAP(CMP_I_RM, W w : 1; S s : 1; B b : 6; B rm : 3; B b1 : 3; MOD mod : 2;
 constexpr auto CMP_I_A  = "0011110xxxxxxxxx_3"_bit3;
 SET_BITMAP(CMP_I_A, W w : 1; S s : 1; B b : 6; B rm : 3; B b1 : 3; MOD mod : 2;)
 
+//General conditional jump mask
+constexpr auto J        = "011xxxxxxxxxxxxx_0"_bit3;
+//NOTE: not included in general table, since second inderection is more effective, 
+//however internal 3+5bit ids are still valid
 constexpr auto JZ       = "01110100xxxxxxxx_0"_bit3;
 constexpr auto JL       = "01111100xxxxxxxx_1"_bit3;
 constexpr auto JLE      = "01111110xxxxxxxx_2"_bit3;
@@ -90,22 +94,7 @@ constexpr auto OPCODE_TABLE = std::tuple {
     CMP_I_RM,
     CMP_I_A,
 
-    JZ,
-    JL,
-    JLE,
-    JB,
-    JBE,
-    JP,
-    JO,
-    JS,
-    JNE,
-    JNL,
-    JG,
-    JAE,
-    JA,
-    JPO,
-    JNO,
-    JNS,
+    J,
 
     LOOP,
     LOOPZ,

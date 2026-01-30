@@ -5,9 +5,7 @@
 #include <string_view>
 #include <stdexcept>
 
-namespace decode::opcode {
-
-
+namespace opcode {
 
 using string_repr_t = char[16];
 

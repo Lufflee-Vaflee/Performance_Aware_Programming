@@ -1,47 +1,72 @@
 #pragma once
 
+#include "LT.hpp"
 #include "decode.hpp"
 
 #include <unordered_map>
-#include <sstream>
-#include <limits>
+#include <optional>
 
 namespace decode {
 
-class conditional_jmp_table {
+class label_gen {
    public:
-    decode_inst_t decode_conditional_jmp(const char* mnemonic, stream_it_t begin, stream_it_t abs, stream_it_t end) {
-        str.str("");
-        std::size_t label_num;
-        int8_t displacment = *(abs + 1);
-        std::size_t position = (abs - begin) + displacment;
-        auto it = m_table.find(position);
-        if(it == m_table.end()) {
-            m_table[position] = label_increment;
-            label_num = label_increment;
-            label_increment++;
-        } else {
-            label_num = it->second;
-        }
+    label_gen(stream_it_t begin) :
+        m_begin(begin) {}
 
-        str << mnemonic << " label" << label_num;
-        return { str.str(), 2 };
-    }
-
-    std::size_t operator[](std::size_t pos) {
+    std::optional<std::size_t> check_for_label(stream_it_t abs) {
+        std::size_t pos = abs - m_begin;
         auto it = m_table.find(pos);
         if(it == m_table.end()) {
-            return std::numeric_limits<std::size_t>::max();
+            return {};
         }
 
         return it->second;
     }
 
+    void reg_label(stream_it_t abs) {
+        std::size_t pos = abs - m_begin;
+        m_table[pos] = m_label_inc;
+        m_label_inc++;
+    }
+
    private:
     std::unordered_map<std::size_t, std::size_t> m_table;
-    std::size_t label_increment = 1;
-    std::stringstream str;
+    std::size_t m_label_inc = 1;
+    stream_it_t m_begin;
 };
+
+template<opcode::ID c_id = 256>
+inline decode_inst_t decode_conditional_j(stream_it_t begin, stream_it_t end) {
+    using namespace opcode;
+
+    ID id = c_id;
+    if constexpr (c_id == 256) {
+        constexpr ID arr[16] = {
+            JO ,
+            JNO,
+            JB ,
+            JAE,
+            JZ ,
+            JNE,
+            JBE,
+            JA ,
+            JS ,
+            JNS,
+            JP ,
+            JPO,
+            JL ,
+            JNL,
+            JLE,
+            JG 
+        };
+
+        uint8_t code = *begin & 0b00001111;
+        id = arr[code];
+    }
+
+    immediate im = *(begin + 1);
+    return { { id, im, noarg{} }, 2};
+}
 
 }
 

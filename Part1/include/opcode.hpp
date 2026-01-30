@@ -2,13 +2,12 @@
 
 #include <cassert>
 #include <variant>
-#include <optional>
 #include <type_traits>
 #include <limits>
 
 #include "bit3mask.hpp"
 
-namespace decode::opcode {
+namespace opcode {
 
 enum class MOD : uint8_t {
     MEM_NO_DISPLACMENT  = 0b00,
@@ -76,42 +75,42 @@ using Z = bool;
 static_assert(sizeof(bool) == 1);
 
 namespace details {
-template <typename T>
-concept has_d =     requires(T t) { t.d; };
-template <typename T>
-concept has_w =     requires(T t) { t.w; };
-template <typename T>
-concept has_s =     requires(T t) { t.s; };
-template <typename T>
-concept has_v =     requires(T t) { t.v; };
-template <typename T>
-concept has_z =     requires(T t) { t.z; };
-template <typename T>
-concept has_mod =   requires(T t) { t.mod; };
-template <typename T>
-concept has_reg =   requires(T t) { t.reg; };
-template <typename T>
-concept has_rw =    requires(T t) { t.rw; };
+    template <typename T>
+    concept has_d =     requires(T t) { t.d; };
+    template <typename T>
+    concept has_w =     requires(T t) { t.w; };
+    template <typename T>
+    concept has_s =     requires(T t) { t.s; };
+    template <typename T>
+    concept has_v =     requires(T t) { t.v; };
+    template <typename T>
+    concept has_z =     requires(T t) { t.z; };
+    template <typename T>
+    concept has_mod =   requires(T t) { t.mod; };
+    template <typename T>
+    concept has_reg =   requires(T t) { t.reg; };
+    template <typename T>
+    concept has_rw =    requires(T t) { t.rw; };
 
-template<typename T>
-struct optionale_selector {
-    //unimplemented
-    static_assert(false);
-    using U = void;
-};
+    template<typename T>
+    struct optionale_selector {
+        //unimplemented
+        static_assert(false);
+        using U = void;
+    };
 
-template<> 
-struct optionale_selector<bool> {
-    using U = uint8_t;
-    static constexpr U v = 3;
-};
+    template<> 
+    struct optionale_selector<bool> {
+        using U = uint8_t;
+        static constexpr U v = 3;
+    };
 
-template<typename T>
-requires(std::is_enum_v<T>)
-struct optionale_selector<T> {
-    using U = std::underlying_type_t<T>;
-    static constexpr U v = std::numeric_limits<U>::max();
-};
+    template<typename T>
+    requires(std::is_enum_v<T>)
+    struct optionale_selector<T> {
+        using U = std::underlying_type_t<T>;
+        static constexpr U v = std::numeric_limits<U>::max();
+    };
 
 }
 
@@ -205,7 +204,6 @@ unpacked_bitmap unpack_bitmap(packed data) {
 
 //also any that could be decribed as "just a num, including addresses"
 using immediate = int16_t;
-
 using direct_addr = uint16_t;
 
 struct displacment_mem {
@@ -213,9 +211,11 @@ struct displacment_mem {
     DIS reg;
 };
 
+using noarg = uint8_t;
+
 static_assert(sizeof(displacment_mem) == 4);
 
-using arg_t = std::variant<REG, DIS, immediate, displacment_mem, direct_addr>;
+using arg_t = std::variant<REG, DIS, immediate, displacment_mem, direct_addr, noarg>;
 static_assert(sizeof(arg_t) == 6);
 
 struct decoded {

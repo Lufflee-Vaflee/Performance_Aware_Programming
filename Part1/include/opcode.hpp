@@ -56,7 +56,20 @@ struct get_bitmap {
     using t = void;
 };
 
-#define SET_BITMAP(OP, TYPE)        \
+template<ID id>
+struct get_reflection {
+    static_assert(false);
+};
+
+#define SET_REFLECTION(OP, LEX)     \
+template<>                          \
+struct get_reflection<OP> {         \
+    static constexpr std::string_view lex = LEX;   \
+};
+
+#define SET_BITMAP(OP, TYPE, LEX)   \
+SET_REFLECTION(OP, LEX)             \
+                                    \
 template<>                          \
 struct get_bitmap<OP> {             \
     using t = struct bitmap{TYPE};                 \

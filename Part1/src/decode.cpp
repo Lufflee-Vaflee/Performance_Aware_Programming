@@ -3,7 +3,6 @@
 #include <cstring>
 #include <utility>
 
-#include "J_.hpp"
 #include "LT.hpp"
 
 namespace decode {
@@ -147,7 +146,38 @@ decode_inst_t generalized_decode(stream_it_t begin, stream_it_t end) {
     return { { id, LHS_d.first, RHS_d.first}, size };
 }
 
+template<opcode::ID c_id = 256>
+inline decode_inst_t decode_conditional_j(stream_it_t begin, stream_it_t end) {
+    using namespace opcode;
 
+    ID id = c_id;
+    if constexpr (c_id == 256) {
+        constexpr ID arr[16] = {
+            JO ,
+            JNO,
+            JB ,
+            JAE,
+            JZ ,
+            JNE,
+            JBE,
+            JA ,
+            JS ,
+            JNS,
+            JP ,
+            JPO,
+            JL ,
+            JNL,
+            JLE,
+            JG 
+        };
+
+        uint8_t code = *begin & 0b00001111;
+        id = arr[code];
+    }
+
+    immediate im = *(begin + 1);
+    return { { id, im, noarg{} }, 2};
+}
 
 opcode::decoded decode(stream_it_t& begin, stream_it_t end) {
     using namespace opcode;

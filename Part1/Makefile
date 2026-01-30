@@ -16,7 +16,7 @@ build/8086sim: build/main.o build/decode.o build/lex.o
 build/main.o: src/main.cpp include/decode.hpp
 	g++ -c $(CXXFLAGS) $(INC) src/main.cpp -o build/main.o
 
-build/decode.o: src/decode.cpp include/decode.hpp include/LT.hpp include/J_.hpp
+build/decode.o: src/decode.cpp include/decode.hpp include/LT.hpp
 	g++ -c $(CXXFLAGS) $(INC) src/decode.cpp -o build/decode.o
 
 build/lex.o: src/lex.cpp include/decode.hpp

@@ -1,6 +1,6 @@
 #pragma once
 
-#include "opcode.hpp"
+#include "code.hpp"
 
 #include <array>
 

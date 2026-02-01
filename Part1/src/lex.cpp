@@ -1,6 +1,5 @@
 #include "lex.hpp"
-#include "LT.hpp"
-#include "opcode.hpp"
+#include "op.hpp"
 
 #include <algorithm>
 #include <sstream>
@@ -62,13 +61,13 @@ inline std::string format_displacment(int16_t displacment) {
 }
 
 
-inline std::string format_immediate(code::immediate_w_arg_t im) {
+inline std::string format_immediate(op::immediate_w_arg_t im) {
     std::stringstream result;
     result << (im.w ? "word " : "byte ") << im.im;
     return result.str();
 }
 
-inline std::string lex_REG(code::reg_arg_t reg) noexcept {
+inline std::string lex_REG(op::reg_arg_t reg) noexcept {
     using namespace code;
     switch(reg.reg) {
         case REG::AL_AX: return reg.w ? "AX" : "AL";
@@ -101,7 +100,7 @@ inline std::string lex_DIS(code::DIS dis) noexcept {
 }
 
 
-inline std::string lex_DIS(code::dis_mem_arg_t im) noexcept {
+inline std::string lex_DIS(op::dis_mem_arg_t im) noexcept {
     std::stringstream str;
     str << lex_DIS(im.reg) << format_displacment(im.displacment);
     return str.str();
@@ -113,7 +112,7 @@ inline std::string format_mem(std::string mem) {
     return str.str();
 }
 
-inline std::string format_mem(code::mem_arg_t direct) {
+inline std::string format_mem(op::mem_arg_t direct) {
     std::stringstream str;
     str << (direct.w ? "word" : "byte") << " [" << direct.mem << ']';
     return str.str();
@@ -123,47 +122,38 @@ inline std::string format_mem(code::mem_arg_t direct) {
 static label_gen gen;
 static stream_it_t current_ip_position;
 
-inline std::string lex_label(code::label_arg_t l) {
+inline std::string lex_label(op::label_arg_t l) {
     auto label = gen.check_for_label(current_ip_position + l);
     assert(label.has_value());
     return std::string("label") + std::to_string(*label);
 }
 
-std::string arg_lex(code::arg_t arg) {
+std::string arg_lex(op::arg_t arg) {
     using namespace code;
 
     struct visitor {
-        std::string operator()(reg_arg_t reg) const { return lex_REG(reg); }
+        std::string operator()(op::reg_arg_t reg) const { return lex_REG(reg); }
         std::string operator()(DIS dis) const { return format_mem(lex_DIS(dis)); }
-        std::string operator()(dis_mem_arg_t mem) const { return format_mem(lex_DIS(mem)); }
-        std::string operator()(label_arg_t l) const { return lex_label(l); }
-        std::string operator()(immediate_w_arg_t im) const { return format_immediate(im); }
-        std::string operator()(mem_arg_t direct) const { return format_mem(direct); }
-        std::string operator()(no_arg_t no_arg) const { return ""; }
+        std::string operator()(op::dis_mem_arg_t mem) const { return format_mem(lex_DIS(mem)); }
+        std::string operator()(op::label_arg_t l) const { return lex_label(l); }
+        std::string operator()(op::immediate_w_arg_t im) const { return format_immediate(im); }
+        std::string operator()(op::mem_arg_t direct) const { return format_mem(direct); }
+        std::string operator()(op::no_arg_t no_arg) const { return ""; }
     };
 
     return std::visit(visitor{}, arg);
 }
 
-std::string opcode_lex(code::ID id) {
-    using namespace code;
+std::string opcode_lex(op::logical id) {
+    using namespace op;
     switch(id) {
-    case MOV_RM_R:
-    case MOV_I_RM:
-    case MOV_I_R:
-    case MOV_M_A:
+    case MOV:
         return "MOV";
-    case ADD_RM_R:
-    case ADD_I_RM:
-    case ADD_I_A:
+    case ADD:
         return "ADD";
-    case SUB_RM_R:
-    case SUB_I_RM:
-    case SUB_I_A:
+    case SUB:
         return "SUB";
-    case CMP_RM_R:
-    case CMP_I_RM:
-    case CMP_I_A:
+    case CMP:
         return "CMP";
     case JZ :    return "JZ";
     case JL :    return "JL";
@@ -190,15 +180,15 @@ std::string opcode_lex(code::ID id) {
     }
 }
 
-inline bool is_conditional_jmp(code::ID id) {
-    using namespace code;
-    return ((id > JZ && id < JNS) || (id > LOOP && id < JCXZ));
+inline bool is_conditional_jmp(op::logical id) {
+    using namespace op;
+    return (id > JO && id < JCXZ);
 }
 
 void cycle(decode::stream_it_t begin, decode::stream_it_t end) {
     gen.reset(begin);
 
-    std::vector<std::pair<code::decoded, decode::stream_it_t>> instructions;
+    std::vector<std::pair<op::decoded, decode::stream_it_t>> instructions;
     for(auto it = begin; it != end;) {
         auto save = it;
         auto decoded = decode::decode(it, end);

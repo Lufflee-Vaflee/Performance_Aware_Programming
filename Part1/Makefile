@@ -13,19 +13,23 @@ build: build/8086sim
 build/8086sim: build/main.o build/decode.o build/lex.o
 	g++ -o build/8086sim build/main.o build/decode.o build/lex.o
 
-build/main.o: src/main.cpp include/decode.hpp
+build/main.o: src/main.cpp include/decode.hpp include/lex.hpp
 	g++ -c $(CXXFLAGS) $(INC) src/main.cpp -o build/main.o
 
-build/decode.o: src/decode.cpp include/decode.hpp include/LT.hpp
+build/decode.o: src/decode.cpp include/decode.hpp include/op.hpp
 	g++ -c $(CXXFLAGS) $(INC) src/decode.cpp -o build/decode.o
 
-build/lex.o: src/lex.cpp include/decode.hpp
+build/lex.o: src/lex.cpp include/lex.hpp include/op.hpp
 	g++ -c $(CXXFLAGS) $(INC) src/lex.cpp -o build/lex.o
 
 
-include/LT.hpp: include/opcode.hpp
+include/code.hpp: include/bit3mask.hpp
 
-include/opcode.hpp: include/bit3mask.hpp
+include/LT.hpp: include/code.hpp
+
+include/lex.hpp: include/decode.hpp
+
+include/op.hpp: include/LT.hpp
 
 test: build
 	./test/test.sh ./build/8086sim ./test

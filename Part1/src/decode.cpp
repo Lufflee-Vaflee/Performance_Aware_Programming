@@ -3,7 +3,7 @@
 #include <cstring>
 #include <utility>
 
-#include "LT.hpp"
+#include "op.hpp"
 
 namespace decode {
 
@@ -36,10 +36,10 @@ void raw_deserialize(T& dest, stream_it_t begin, stream_it_t end) {
 }
 
 template<typename bitmap_t>
-std::pair<code::arg_t, int> decode_RM(bitmap_t bitmap, stream_it_t begin, stream_it_t end) {
+std::pair<op::arg_t, int> decode_RM(bitmap_t bitmap, stream_it_t begin, stream_it_t end) {
     using namespace code;
-    dis_mem_arg_t ARG_dis;
-    reg_arg_t ARG_reg;
+    op::dis_mem_arg_t ARG_dis;
+    op::reg_arg_t ARG_reg;
 
     static_assert(has_mod<bitmap_t>);
     static_assert(has_rm<bitmap_t>);
@@ -50,7 +50,7 @@ std::pair<code::arg_t, int> decode_RM(bitmap_t bitmap, stream_it_t begin, stream
             return { ARG_reg , 0 };
         case MOD::MEM_NO_DISPLACMENT:
             if((DIS(bitmap.rm)) == DIS::DIRECT) {
-                mem_arg_t mem;
+                op::mem_arg_t mem;
                 raw_deserialize<uint16_t>(mem.mem, begin, end);
                 mem.w = true;
                 return { mem , 2 };
@@ -70,9 +70,9 @@ std::pair<code::arg_t, int> decode_RM(bitmap_t bitmap, stream_it_t begin, stream
 }
 
 template<typename bitmap_t>
-std::pair<code::arg_t, int> decode_immediate(bitmap_t bitmap, stream_it_t begin, stream_it_t end) {
+std::pair<op::arg_t, int> decode_immediate(bitmap_t bitmap, stream_it_t begin, stream_it_t end) {
     using namespace code;
-    immediate_w_arg_t arg;
+    op::immediate_w_arg_t arg;
 
     static_assert(has_w<bitmap_t>);
     auto w = bitmap.w;
@@ -109,9 +109,9 @@ std::pair<code::arg_t, int> decode_immediate(bitmap_t bitmap, stream_it_t begin,
 }
 
 template<typename bitmap_t>
-std::pair<code::arg_t, int> decode_mem(bitmap_t bitmap, stream_it_t begin, stream_it_t end) {
+std::pair<op::arg_t, int> decode_mem(bitmap_t bitmap, stream_it_t begin, stream_it_t end) {
     using namespace code;
-    mem_arg_t arg;
+    op::mem_arg_t arg;
 
     static_assert(has_w<bitmap_t>);
     auto w = bitmap.w;
@@ -130,22 +130,22 @@ std::pair<code::arg_t, int> decode_mem(bitmap_t bitmap, stream_it_t begin, strea
 }
 
 template<typename bitmap_t>
-std::pair<code::arg_t, int> decode_reg(bitmap_t bitmap, stream_it_t begin, stream_it_t end) {
+std::pair<op::arg_t, int> decode_reg(bitmap_t bitmap, stream_it_t begin, stream_it_t end) {
     static_assert(code::has_reg<bitmap_t>);
     static_assert(code::has_w<bitmap_t>);
-    code::reg_arg_t ARG_reg { bitmap.reg, bitmap.w };
+    op::reg_arg_t ARG_reg { bitmap.reg, bitmap.w };
     return { ARG_reg, 0 };
 }
 
 template<typename bitmap_t>
-std::pair<code::arg_t, int> decode_AX(bitmap_t bitmap, stream_it_t begin, stream_it_t end) {
+std::pair<op::arg_t, int> decode_AX(bitmap_t bitmap, stream_it_t begin, stream_it_t end) {
     static_assert(code::has_w<bitmap_t>);
-    code::reg_arg_t ARG_reg { code::REG::AL_AX, bitmap.w };
+    op::reg_arg_t ARG_reg { code::REG::AL_AX, bitmap.w };
     return { ARG_reg, 0 };
 }
 
 template<code::ID id>
-using arg_delegator_t = std::pair<code::arg_t, int>(typename code::get_bitmap<id>::t, stream_it_t, stream_it_t);
+using arg_delegator_t = std::pair<op::arg_t, int>(typename code::get_bitmap<id>::t, stream_it_t, stream_it_t);
 
 template <code::ID id, arg_delegator_t<id> D1, arg_delegator_t<id> D2>
 decode_inst_t generalized_decode(stream_it_t begin, stream_it_t end) {
@@ -165,7 +165,8 @@ decode_inst_t generalized_decode(stream_it_t begin, stream_it_t end) {
         }
     }
 
-    return { { id, LHS_d.first, RHS_d.first}, size };
+    
+    return { { op::code_to_op(id), LHS_d.first, RHS_d.first }, size };
 }
 
 template<code::ID c_id = 256>
@@ -177,14 +178,14 @@ decode_inst_t decode_conditional_j(stream_it_t begin, stream_it_t end) {
         id = *begin & 0b11101111;
     }
 
-    label_arg_t im = *(begin + 1);
-    return { { id, im, no_arg_t{} }, 2};
+    op::label_arg_t im = *(begin + 1);
+    return { { op::code_to_op(id), im, op::no_arg_t{} }, 2};
 }
 
-code::decoded decode(stream_it_t& begin, stream_it_t end) {
+op::decoded decode(stream_it_t& begin, stream_it_t end) {
     using namespace code;
     int advance = 0;
-    code::decoded op;
+    op::decoded op;
 
     auto op_id = peek_opcode_ident(begin);
     switch (op_id) {

@@ -4,77 +4,76 @@
 
 #include <array>
 
-namespace opcode {
+namespace code {
 // OPCODE TABLE
 //                         index_bits       index_addition(5 bit)
 //                         |||              ||
 constexpr auto MOV_RM_R = "100010xxxxxxxxxx_0"_bit3;
-SET_BITMAP(MOV_RM_R, W w : 1; D d : 1; B b : 6; B rm : 3; REG reg : 3; MOD mod : 2;, "MOV")
+SET_BITMAP(MOV_RM_R, W w : 1; D d : 1; B b : 6; B rm : 3; REG reg : 3; MOD mod : 2;)
 
 constexpr auto MOV_I_RM = "1100011xxx000xxx_0"_bit3;
-SET_BITMAP(MOV_I_RM, W w : 1; B b : 7; B rm : 3; B b2 : 3; MOD mod : 2;, "MOV")
+SET_BITMAP(MOV_I_RM, W w : 1; B b : 7; B rm : 3; B b2 : 3; MOD mod : 2;)
 
 constexpr auto MOV_I_R  = "1011xxxxxxxxxxxx_0"_bit3;
-SET_BITMAP(MOV_I_R, REG reg : 3; W w : 1; B b : 4;, "MOV")
+SET_BITMAP(MOV_I_R, REG reg : 3; W w : 1; B b : 4;)
 
 constexpr auto MOV_M_A  = "101000xxxxxxxxxx_1"_bit3;
-SET_BITMAP(MOV_M_A, W w : 1; D d : 1; B b : 6;, "MOV")
+SET_BITMAP(MOV_M_A, W w : 1; D d : 1; B b : 6;)
 
 constexpr auto ADD_RM_R = "000000xxxxxxxxxx_0"_bit3;
-SET_BITMAP(ADD_RM_R, W w : 1; D d : 1; B b : 6; B rm : 3; REG reg : 3; MOD mod : 2;, "ADD")
+SET_BITMAP(ADD_RM_R, W w : 1; D d : 1; B b : 6; B rm : 3; REG reg : 3; MOD mod : 2;)
 
 constexpr auto ADD_I_RM = "100000xxxx000xxx_1"_bit3;
-SET_BITMAP(ADD_I_RM, W w : 1; S s : 1; B b : 6; B rm : 3; B b2 : 3; MOD mod : 2;, "ADD")
+SET_BITMAP(ADD_I_RM, W w : 1; S s : 1; B b : 6; B rm : 3; B b2 : 3; MOD mod : 2;)
 
 constexpr auto ADD_I_A  = "0000010xxxxxxxxx_1"_bit3;
-SET_BITMAP(ADD_I_A, W w : 1; B b : 7;, "ADD")
+SET_BITMAP(ADD_I_A, W w : 1; B b : 7;)
 
 constexpr auto SUB_RM_R = "001010xxxxxxxxxx_0"_bit3;
-SET_BITMAP(SUB_RM_R, W w : 1; D d : 1; B b : 6; B rm : 3; REG reg : 3; MOD mod : 2;, "SUB")
+SET_BITMAP(SUB_RM_R, W w : 1; D d : 1; B b : 6; B rm : 3; REG reg : 3; MOD mod : 2;)
 
 constexpr auto SUB_I_RM = "100000xxxx101xxx_2"_bit3;
-SET_BITMAP(SUB_I_RM, W w : 1; S s : 1; B b : 6; B rm : 3; B b2 : 3; MOD mod : 2;, "SUB")
+SET_BITMAP(SUB_I_RM, W w : 1; S s : 1; B b : 6; B rm : 3; B b2 : 3; MOD mod : 2;)
 
 constexpr auto SUB_I_A  = "0010110xxxxxxxxx_1"_bit3;
-SET_BITMAP(SUB_I_A, W w : 1; B b : 7;, "SUB")
+SET_BITMAP(SUB_I_A, W w : 1; B b : 7;)
 
 constexpr auto CMP_RM_R = "001110xxxxxxxxxx_2"_bit3;
-SET_BITMAP(CMP_RM_R, W w : 1; D d : 1; B b : 6; B rm : 3; REG reg : 3; MOD mod : 2;, "CMP")
+SET_BITMAP(CMP_RM_R, W w : 1; D d : 1; B b : 6; B rm : 3; REG reg : 3; MOD mod : 2;)
 
 constexpr auto CMP_I_RM = "100000xxxx111xxx_3"_bit3;
-SET_BITMAP(CMP_I_RM, W w : 1; S s : 1; B b : 6; B rm : 3; B b2 : 3; MOD mod : 2;, "CMP")
+SET_BITMAP(CMP_I_RM, W w : 1; S s : 1; B b : 6; B rm : 3; B b2 : 3; MOD mod : 2;)
 
 constexpr auto CMP_I_A  = "0011110xxxxxxxxx_3"_bit3;
-SET_BITMAP(CMP_I_A, W w : 1; B b : 7;, "CMP")
+SET_BITMAP(CMP_I_A, W w : 1; B b : 7;)
 
 //General conditional jump mask
 constexpr auto J        = "011xxxxxxxxxxxxx_0"_bit3;
 //NOTE: not included in general table, since second inderection is more effective, 
 //however internal 3+5bit ids are still valid
-constexpr auto JZ       = "01110100xxxxxxxx_0"_bit3; 
-constexpr auto JL       = "01111100xxxxxxxx_1"_bit3; 
-constexpr auto JLE      = "01111110xxxxxxxx_2"_bit3; 
-constexpr auto JB       = "01110010xxxxxxxx_3"_bit3; 
-constexpr auto JBE      = "01110110xxxxxxxx_4"_bit3; 
-constexpr auto JP       = "01111010xxxxxxxx_5"_bit3; 
-constexpr auto JO       = "01110000xxxxxxxx_6"_bit3; 
-constexpr auto JS       = "01111000xxxxxxxx_7"_bit3; 
-constexpr auto JNE      = "01110101xxxxxxxx_8"_bit3; 
-constexpr auto JNL      = "01111101xxxxxxxx_9"_bit3; 
-constexpr auto JG       = "01111111xxxxxxxx_10"_bit3;
-constexpr auto JAE      = "01110011xxxxxxxx_11"_bit3;
-constexpr auto JA       = "01110111xxxxxxxx_12"_bit3;
-constexpr auto JPO      = "01111011xxxxxxxx_13"_bit3;
-constexpr auto JNO      = "01110001xxxxxxxx_14"_bit3;
-constexpr auto JNS      = "01111001xxxxxxxx_15"_bit3;
+constexpr auto JO       = "01110000xxxxxxxx_0"_bit3;
+constexpr auto JNO      = "01110001xxxxxxxx_1"_bit3;
+constexpr auto JB       = "01110010xxxxxxxx_2"_bit3;
+constexpr auto JAE      = "01110011xxxxxxxx_3"_bit3;
+constexpr auto JZ       = "01110100xxxxxxxx_4"_bit3;
+constexpr auto JNE      = "01110101xxxxxxxx_5"_bit3;
+constexpr auto JBE      = "01110110xxxxxxxx_6"_bit3;
+constexpr auto JA       = "01110111xxxxxxxx_7"_bit3;
+constexpr auto JS       = "01111000xxxxxxxx_8"_bit3;
+constexpr auto JNS      = "01111001xxxxxxxx_9"_bit3;
+constexpr auto JP       = "01111010xxxxxxxx_10"_bit3;
+constexpr auto JPO      = "01111011xxxxxxxx_11"_bit3;
+constexpr auto JL       = "01111100xxxxxxxx_12"_bit3;
+constexpr auto JNL      = "01111101xxxxxxxx_13"_bit3;
+constexpr auto JLE      = "01111110xxxxxxxx_14"_bit3;
+constexpr auto JG       = "01111111xxxxxxxx_15"_bit3;
 
-constexpr auto LOOP     = "11100010xxxxxxxx_0"_bit3; 
-constexpr auto LOOPZ    = "11100001xxxxxxxx_1"_bit3; 
-constexpr auto LOOPNZ   = "11100000xxxxxxxx_2"_bit3; 
-constexpr auto JCXZ     = "11100011xxxxxxxx_3"_bit3; 
+constexpr auto LOOP     = "11100010xxxxxxxx_0"_bit3;
+constexpr auto LOOPZ    = "11100001xxxxxxxx_1"_bit3;
+constexpr auto LOOPNZ   = "11100000xxxxxxxx_2"_bit3;
+constexpr auto JCXZ     = "11100011xxxxxxxx_3"_bit3;
 
 namespace details {
-
 constexpr auto OPCODE_TABLE = std::tuple {
     MOV_RM_R,
     MOV_I_R,

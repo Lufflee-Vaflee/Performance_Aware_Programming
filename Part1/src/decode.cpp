@@ -8,13 +8,13 @@
 namespace decode {
 
 //note: unsafe, doesnt check for end
-opcode::ID peek_opcode_ident(decode::stream_it_t begin) {
+code::ID peek_opcode_ident(decode::stream_it_t begin) {
     uint16_t opcode = 0;
     char* dest = reinterpret_cast<char*>(&opcode);
     dest[0] = *(begin + 1);
     dest[1] = *begin;
 
-    auto lt = opcode::LT::getInstance();
+    auto lt = code::LT::getInstance();
     return lt[opcode];
 }
 
@@ -36,8 +36,8 @@ void raw_deserialize(T& dest, stream_it_t begin, stream_it_t end) {
 }
 
 template<typename bitmap_t>
-inline std::pair<opcode::arg_t, int> decode_RM(bitmap_t bitmap, stream_it_t begin, stream_it_t end) {
-    using namespace opcode;
+std::pair<code::arg_t, int> decode_RM(bitmap_t bitmap, stream_it_t begin, stream_it_t end) {
+    using namespace code;
     dis_mem_arg_t ARG_dis;
     reg_arg_t ARG_reg;
 
@@ -70,8 +70,8 @@ inline std::pair<opcode::arg_t, int> decode_RM(bitmap_t bitmap, stream_it_t begi
 }
 
 template<typename bitmap_t>
-inline std::pair<opcode::arg_t, int> decode_immediate(bitmap_t bitmap, stream_it_t begin, stream_it_t end) {
-    using namespace opcode;
+std::pair<code::arg_t, int> decode_immediate(bitmap_t bitmap, stream_it_t begin, stream_it_t end) {
+    using namespace code;
     immediate_w_arg_t arg;
 
     static_assert(has_w<bitmap_t>);
@@ -109,8 +109,8 @@ inline std::pair<opcode::arg_t, int> decode_immediate(bitmap_t bitmap, stream_it
 }
 
 template<typename bitmap_t>
-inline std::pair<opcode::arg_t, int> decode_mem(bitmap_t bitmap, stream_it_t begin, stream_it_t end) {
-    using namespace opcode;
+std::pair<code::arg_t, int> decode_mem(bitmap_t bitmap, stream_it_t begin, stream_it_t end) {
+    using namespace code;
     mem_arg_t arg;
 
     static_assert(has_w<bitmap_t>);
@@ -130,26 +130,26 @@ inline std::pair<opcode::arg_t, int> decode_mem(bitmap_t bitmap, stream_it_t beg
 }
 
 template<typename bitmap_t>
-inline std::pair<opcode::arg_t, int> decode_reg(bitmap_t bitmap, stream_it_t begin, stream_it_t end) {
-    static_assert(opcode::has_reg<bitmap_t>);
-    static_assert(opcode::has_w<bitmap_t>);
-    opcode::reg_arg_t ARG_reg { bitmap.reg, bitmap.w };
+std::pair<code::arg_t, int> decode_reg(bitmap_t bitmap, stream_it_t begin, stream_it_t end) {
+    static_assert(code::has_reg<bitmap_t>);
+    static_assert(code::has_w<bitmap_t>);
+    code::reg_arg_t ARG_reg { bitmap.reg, bitmap.w };
     return { ARG_reg, 0 };
 }
 
 template<typename bitmap_t>
-inline std::pair<opcode::arg_t, int> decode_AX(bitmap_t bitmap, stream_it_t begin, stream_it_t end) {
-    static_assert(opcode::has_w<bitmap_t>);
-    opcode::reg_arg_t ARG_reg { opcode::REG::AL_AX, bitmap.w };
+std::pair<code::arg_t, int> decode_AX(bitmap_t bitmap, stream_it_t begin, stream_it_t end) {
+    static_assert(code::has_w<bitmap_t>);
+    code::reg_arg_t ARG_reg { code::REG::AL_AX, bitmap.w };
     return { ARG_reg, 0 };
 }
 
-template<opcode::ID id>
-using arg_delegator_t = std::pair<opcode::arg_t, int>(typename opcode::get_bitmap<id>::t, stream_it_t, stream_it_t);
+template<code::ID id>
+using arg_delegator_t = std::pair<code::arg_t, int>(typename code::get_bitmap<id>::t, stream_it_t, stream_it_t);
 
-template <opcode::ID id, arg_delegator_t<id> D1, arg_delegator_t<id> D2>
+template <code::ID id, arg_delegator_t<id> D1, arg_delegator_t<id> D2>
 decode_inst_t generalized_decode(stream_it_t begin, stream_it_t end) {
-    using bitmask_t = opcode::get_bitmap<id>::t;
+    using bitmask_t = code::get_bitmap<id>::t;
     bitmask_t bitmap;
     raw_deserialize<bitmask_t>(bitmap, begin, end);
 
@@ -159,7 +159,7 @@ decode_inst_t generalized_decode(stream_it_t begin, stream_it_t end) {
     decode_arg_t RHS_d = D2(bitmap, begin, end);
 
     int size = sizeof(bitmask_t) + LHS_d.second + RHS_d.second;
-    if constexpr (opcode::has_d<bitmask_t>) {
+    if constexpr (code::has_d<bitmask_t>) {
         if (!bitmap.d) {
             std::swap(LHS_d.first, RHS_d.first);
         }
@@ -168,44 +168,23 @@ decode_inst_t generalized_decode(stream_it_t begin, stream_it_t end) {
     return { { id, LHS_d.first, RHS_d.first}, size };
 }
 
-template<opcode::ID c_id = 256>
-inline decode_inst_t decode_conditional_j(stream_it_t begin, stream_it_t end) {
-    using namespace opcode;
+template<code::ID c_id = 256>
+decode_inst_t decode_conditional_j(stream_it_t begin, stream_it_t end) {
+    using namespace code;
 
     ID id = c_id;
-    //TODO: rearrange main opcode list to have ordering corresponding to last four bits, to remove this array
     if constexpr (c_id == 256) {
-        constexpr ID arr[16] = {
-            JO ,
-            JNO,
-            JB ,
-            JAE,
-            JZ ,
-            JNE,
-            JBE,
-            JA ,
-            JS ,
-            JNS,
-            JP ,
-            JPO,
-            JL ,
-            JNL,
-            JLE,
-            JG 
-        };
-
-        uint8_t code = *begin & 0b00001111;
-        id = arr[code];
+        id = *begin & 0b11101111;
     }
 
     label_arg_t im = *(begin + 1);
     return { { id, im, no_arg_t{} }, 2};
 }
 
-opcode::decoded decode(stream_it_t& begin, stream_it_t end) {
-    using namespace opcode;
+code::decoded decode(stream_it_t& begin, stream_it_t end) {
+    using namespace code;
     int advance = 0;
-    opcode::decoded op;
+    code::decoded op;
 
     auto op_id = peek_opcode_ident(begin);
     switch (op_id) {

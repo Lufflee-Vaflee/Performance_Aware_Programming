@@ -33,10 +33,15 @@ class label_gen {
         m_label_inc++;
     }
 
-    stream_it_t m_begin;
+    void reset(stream_it_t begin) {
+        m_begin = begin;
+        m_label_inc = 1;
+        m_table.clear();
+    }
 
    private:
     std::unordered_map<std::size_t, std::size_t> m_table;
+    stream_it_t m_begin;
     std::size_t m_label_inc = 1;
 };
 
@@ -57,14 +62,14 @@ inline std::string format_displacment(int16_t displacment) {
 }
 
 
-inline std::string format_immediate(opcode::immediate_w_arg_t im) {
+inline std::string format_immediate(code::immediate_w_arg_t im) {
     std::stringstream result;
     result << (im.w ? "word " : "byte ") << im.im;
     return result.str();
 }
 
-inline std::string lex_REG(opcode::reg_arg_t reg) noexcept {
-    using namespace opcode;
+inline std::string lex_REG(code::reg_arg_t reg) noexcept {
+    using namespace code;
     switch(reg.reg) {
         case REG::AL_AX: return reg.w ? "AX" : "AL";
         case REG::CL_CX: return reg.w ? "CX" : "CL";
@@ -79,8 +84,8 @@ inline std::string lex_REG(opcode::reg_arg_t reg) noexcept {
     std::unreachable();
 }
 
-inline std::string lex_DIS(opcode::DIS dis) noexcept {
-    using namespace opcode;
+inline std::string lex_DIS(code::DIS dis) noexcept {
+    using namespace code;
     switch(dis) {
         case DIS::BX_SI : return "BX + SI";
         case DIS::BX_DI : return "BX + DI";
@@ -96,7 +101,7 @@ inline std::string lex_DIS(opcode::DIS dis) noexcept {
 }
 
 
-inline std::string lex_DIS(opcode::dis_mem_arg_t im) noexcept {
+inline std::string lex_DIS(code::dis_mem_arg_t im) noexcept {
     std::stringstream str;
     str << lex_DIS(im.reg) << format_displacment(im.displacment);
     return str.str();
@@ -108,23 +113,24 @@ inline std::string format_mem(std::string mem) {
     return str.str();
 }
 
-inline std::string format_mem(opcode::mem_arg_t direct) {
+inline std::string format_mem(code::mem_arg_t direct) {
     std::stringstream str;
     str << (direct.w ? "word" : "byte") << " [" << direct.mem << ']';
     return str.str();
 }
 
+//TODO: could be better
 static label_gen gen;
 static stream_it_t current_ip_position;
 
-inline std::string lex_label(opcode::label_arg_t l) {
+inline std::string lex_label(code::label_arg_t l) {
     auto label = gen.check_for_label(current_ip_position + l);
     assert(label.has_value());
     return std::string("label") + std::to_string(*label);
 }
 
-std::string arg_lex(opcode::arg_t arg) {
-    using namespace opcode;
+std::string arg_lex(code::arg_t arg) {
+    using namespace code;
 
     struct visitor {
         std::string operator()(reg_arg_t reg) const { return lex_REG(reg); }
@@ -139,8 +145,8 @@ std::string arg_lex(opcode::arg_t arg) {
     return std::visit(visitor{}, arg);
 }
 
-std::string opcode_lex(opcode::ID id) {
-    using namespace opcode;
+std::string opcode_lex(code::ID id) {
+    using namespace code;
     switch(id) {
     case MOV_RM_R:
     case MOV_I_RM:
@@ -184,15 +190,15 @@ std::string opcode_lex(opcode::ID id) {
     }
 }
 
-inline bool is_conditional_jmp(opcode::ID id) {
-    using namespace opcode;
+inline bool is_conditional_jmp(code::ID id) {
+    using namespace code;
     return ((id > JZ && id < JNS) || (id > LOOP && id < JCXZ));
 }
 
 void cycle(decode::stream_it_t begin, decode::stream_it_t end) {
-    gen.m_begin = begin;
+    gen.reset(begin);
 
-    std::vector<std::pair<opcode::decoded, decode::stream_it_t>> instructions;
+    std::vector<std::pair<code::decoded, decode::stream_it_t>> instructions;
     for(auto it = begin; it != end;) {
         auto save = it;
         auto decoded = decode::decode(it, end);

@@ -2,12 +2,10 @@
 
 #include <cassert>
 #include <variant>
-#include <type_traits>
-#include <limits>
 
 #include "bit3mask.hpp"
 
-namespace opcode {
+namespace code {
 
 enum class MOD : uint8_t {
     MEM_NO_DISPLACMENT  = 0b00,
@@ -50,13 +48,13 @@ struct RM {
     }
 };
 
-template<ID id>
+template<code::ID id>
 struct get_bitmap {
     static_assert(false);
     using t = void;
 };
 
-#define SET_BITMAP(OP, TYPE, LEX)   \
+#define SET_BITMAP(OP, TYPE)   \
 template<>                          \
 struct get_bitmap<OP> {             \
     using t = struct bitmap{TYPE};                 \
@@ -90,6 +88,33 @@ template <typename T>
 concept has_reg =   requires(T t) { t.reg; };
 template <typename T>
 concept has_rm =    requires(T t) { t.rm; };
+
+enum class logical {
+    MOV,
+    ADD,
+    SUB,
+    CMP,
+    JO,
+    JNO,
+    JB,
+    JAE,
+    JZ,
+    JNE,
+    JBE,
+    JA,
+    JS,
+    JNS,
+    JP,
+    JPO,
+    JL,
+    JNL,
+    JLE,
+    JG,
+    LOOP,
+    LOOPZ,
+    LOOPNZ,
+    JCXZ,
+};
 
 typedef int16_t label_arg_t;
 

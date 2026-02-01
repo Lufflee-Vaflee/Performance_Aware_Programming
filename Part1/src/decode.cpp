@@ -35,46 +35,53 @@ void raw_deserialize(T& dest, stream_it_t begin, stream_it_t end) {
     return;
 }
 
-inline std::pair<opcode::arg_t, int> decode_RM(opcode::unpacked_bitmap bitmap, stream_it_t begin, stream_it_t end) {
+template<typename bitmap_t>
+inline std::pair<opcode::arg_t, int> decode_RM(bitmap_t bitmap, stream_it_t begin, stream_it_t end) {
     using namespace opcode;
     dis_mem_arg_t ARG_dis;
     reg_arg_t ARG_reg;
 
-    assert(bitmap.mod.has_value());
-    assert(bitmap.rm.has_value());
-    switch (*bitmap.mod) {
+    static_assert(has_mod<bitmap_t>);
+    static_assert(has_rm<bitmap_t>);
+    switch (bitmap.mod) {
         case MOD::REGISTER:
-            assert(bitmap.w.has_value());
-            ARG_reg = { REG(*(bitmap.rm)), (*bitmap.w) };
+            static_assert(has_w<bitmap_t>);
+            ARG_reg = { REG(bitmap.rm), bitmap.w };
             return { ARG_reg , 0 };
         case MOD::MEM_NO_DISPLACMENT:
-            if((DIS(*(bitmap.rm))) == DIS::DIRECT) {
+            if((DIS(bitmap.rm)) == DIS::DIRECT) {
                 mem_arg_t mem;
                 raw_deserialize<uint16_t>(mem.mem, begin, end);
                 mem.w = true;
                 return { mem , 2 };
             }
 
-            return { DIS(*(bitmap.rm)), 0 };
+            return { DIS(bitmap.rm), 0 };
         case MOD::MEM_8_DISPLACMENT:
-            ARG_dis = { *(begin), DIS(*(bitmap.rm)) };
+            ARG_dis = { *(begin), DIS(bitmap.rm) };
             return { ARG_dis, 1 };
         case MOD::MEM_16_DISPLACMENT:
             raw_deserialize<int16_t>(ARG_dis.displacment, begin, end);
-            ARG_dis.reg = *(bitmap.rm);
+            ARG_dis.reg = DIS(bitmap.rm);
             return { ARG_dis, 2 };
     }
 
     std::unreachable();
 }
 
-inline std::pair<opcode::arg_t, int> decode_immediate(opcode::unpacked_bitmap bitmap, stream_it_t begin, stream_it_t end) {
+template<typename bitmap_t>
+inline std::pair<opcode::arg_t, int> decode_immediate(bitmap_t bitmap, stream_it_t begin, stream_it_t end) {
     using namespace opcode;
     immediate_w_arg_t arg;
 
-    assert(bitmap.w.has_value());
-    auto w = *(bitmap.w);
-    auto s = bitmap.s.has_value() ? *(bitmap.s) : 0;
+    static_assert(has_w<bitmap_t>);
+    auto w = bitmap.w;
+    S s;
+    if constexpr(has_s<bitmap_t>) {
+        s = bitmap.s;
+    } else {
+        s = 0;
+    }
 
     int S_W = s;
     S_W <<= 1;
@@ -101,12 +108,13 @@ inline std::pair<opcode::arg_t, int> decode_immediate(opcode::unpacked_bitmap bi
     std::unreachable();
 }
 
-inline std::pair<opcode::arg_t, int> decode_mem(opcode::unpacked_bitmap bitmap, stream_it_t begin, stream_it_t end) {
+template<typename bitmap_t>
+inline std::pair<opcode::arg_t, int> decode_mem(bitmap_t bitmap, stream_it_t begin, stream_it_t end) {
     using namespace opcode;
     mem_arg_t arg;
 
-    assert(bitmap.w.has_value());
-    auto w = *(bitmap.w);
+    static_assert(has_w<bitmap_t>);
+    auto w = bitmap.w;
     int size = 0;
 
     if(w) {
@@ -121,55 +129,38 @@ inline std::pair<opcode::arg_t, int> decode_mem(opcode::unpacked_bitmap bitmap, 
     return { arg, size };
 }
 
-inline std::pair<opcode::arg_t, int> decode_reg(opcode::unpacked_bitmap bitmap, stream_it_t begin, stream_it_t end) {
-    assert(bitmap.reg.has_value());
-    assert(bitmap.w.has_value());
-    opcode::reg_arg_t ARG_reg { *(bitmap.reg), *(bitmap.w) };
+template<typename bitmap_t>
+inline std::pair<opcode::arg_t, int> decode_reg(bitmap_t bitmap, stream_it_t begin, stream_it_t end) {
+    static_assert(opcode::has_reg<bitmap_t>);
+    static_assert(opcode::has_w<bitmap_t>);
+    opcode::reg_arg_t ARG_reg { bitmap.reg, bitmap.w };
     return { ARG_reg, 0 };
 }
 
-inline std::pair<opcode::arg_t, int> decode_AX(opcode::unpacked_bitmap bitmap, stream_it_t begin, stream_it_t end) {
-    assert(bitmap.w.has_value());
-    opcode::reg_arg_t ARG_reg { opcode::REG::AL_AX, *(bitmap.w) };
+template<typename bitmap_t>
+inline std::pair<opcode::arg_t, int> decode_AX(bitmap_t bitmap, stream_it_t begin, stream_it_t end) {
+    static_assert(opcode::has_w<bitmap_t>);
+    opcode::reg_arg_t ARG_reg { opcode::REG::AL_AX, bitmap.w };
     return { ARG_reg, 0 };
 }
 
-template <typename F>
-concept Delegator =
-    std::invocable<
-        F,
-        opcode::unpacked_bitmap,
-        stream_it_t,
-        stream_it_t
-    > &&
-    std::same_as<
-        std::invoke_result_t<
-        F,
-        opcode::unpacked_bitmap,
-        stream_it_t,
-        stream_it_t
-        >,
-        std::pair<opcode::arg_t, int>
-    >;
+template<opcode::ID id>
+using arg_delegator_t = std::pair<opcode::arg_t, int>(typename opcode::get_bitmap<id>::t, stream_it_t, stream_it_t);
 
-template <opcode::ID id, auto D1, auto D2>
-requires(
-    Delegator<decltype(D1)> &&
-    Delegator<decltype(D2)>)
+template <opcode::ID id, arg_delegator_t<id> D1, arg_delegator_t<id> D2>
 decode_inst_t generalized_decode(stream_it_t begin, stream_it_t end) {
     using bitmask_t = opcode::get_bitmap<id>::t;
-    bitmask_t packed;
-    raw_deserialize<bitmask_t>(packed, begin, end);
+    bitmask_t bitmap;
+    raw_deserialize<bitmask_t>(bitmap, begin, end);
 
-    opcode::unpacked_bitmap unpacked = unpack_bitmap<bitmask_t>(packed);
     begin += sizeof(bitmask_t);
-    decode_arg_t LHS_d = D1(unpacked, begin, end); 
+    decode_arg_t LHS_d = D1(bitmap, begin, end); 
     begin += LHS_d.second;
-    decode_arg_t RHS_d = D2(unpacked, begin, end);
+    decode_arg_t RHS_d = D2(bitmap, begin, end);
 
     int size = sizeof(bitmask_t) + LHS_d.second + RHS_d.second;
-    if constexpr (opcode::details::has_d<bitmask_t>) {
-        if (!(*unpacked.d)) {
+    if constexpr (opcode::has_d<bitmask_t>) {
+        if (!bitmap.d) {
             std::swap(LHS_d.first, RHS_d.first);
         }
     }
@@ -182,6 +173,7 @@ inline decode_inst_t decode_conditional_j(stream_it_t begin, stream_it_t end) {
     using namespace opcode;
 
     ID id = c_id;
+    //TODO: rearrange main opcode list to have ordering corresponding to last four bits, to remove this array
     if constexpr (c_id == 256) {
         constexpr ID arr[16] = {
             JO ,

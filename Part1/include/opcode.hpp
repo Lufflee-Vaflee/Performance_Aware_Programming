@@ -74,133 +74,23 @@ using Z = bool;
 
 static_assert(sizeof(bool) == 1);
 
-namespace details {
-    template <typename T>
-    concept has_d =     requires(T t) { t.d; };
-    template <typename T>
-    concept has_w =     requires(T t) { t.w; };
-    template <typename T>
-    concept has_s =     requires(T t) { t.s; };
-    template <typename T>
-    concept has_v =     requires(T t) { t.v; };
-    template <typename T>
-    concept has_z =     requires(T t) { t.z; };
-    template <typename T>
-    concept has_mod =   requires(T t) { t.mod; };
-    template <typename T>
-    concept has_reg =   requires(T t) { t.reg; };
-    template <typename T>
-    concept has_rm =    requires(T t) { t.rm; };
+template <typename T>
+concept has_d =     requires(T t) { t.d; };
+template <typename T>
+concept has_w =     requires(T t) { t.w; };
+template <typename T>
+concept has_s =     requires(T t) { t.s; };
+template <typename T>
+concept has_v =     requires(T t) { t.v; };
+template <typename T>
+concept has_z =     requires(T t) { t.z; };
+template <typename T>
+concept has_mod =   requires(T t) { t.mod; };
+template <typename T>
+concept has_reg =   requires(T t) { t.reg; };
+template <typename T>
+concept has_rm =    requires(T t) { t.rm; };
 
-    template<typename T>
-    struct optionale_selector {
-        //unimplemented
-        static_assert(false);
-        using U = void;
-    };
-
-    template<> 
-    struct optionale_selector<bool> {
-        using U = uint8_t;
-        static constexpr U v = 3;
-    };
-
-    template<typename T>
-    requires(std::is_enum_v<T>)
-    struct optionale_selector<T> {
-        using U = std::underlying_type_t<T>;
-        static constexpr U v = std::numeric_limits<U>::max();
-    };
-
-}
-
-template<typename T, typename U = details::optionale_selector<T>::U, U nulloption = details::optionale_selector<T>::v>
-struct optionale_base {
-    static_assert(sizeof(T) == sizeof(U));
-    static_assert(alignof(T) == alignof(U));
-
-    optionale_base() {
-        value.u = nulloption;
-    }
-
-    union data {
-        T t;
-        U u;
-    };
-
-    bool has_value() {
-        auto u = std::bit_cast<U>(value);
-        if(u == nulloption) {
-            return false;
-        }
-        
-        value.t = std::bit_cast<T>(u);
-        return true;
-    }
-
-    void reset() {
-        value.u = nulloption;
-    }
-
-    T& operator*() {
-        return value.t;
-    }
-
-   private:
-    data value;
-};
-
-template<typename T>
-struct optionale : optionale_base<T> {};
-
-// zero-initialized
-struct unpacked_bitmap {
-    optionale<D> d;
-    optionale<W> w;
-    optionale<S> s;
-    optionale<V> v;
-    optionale<Z> z;
-    optionale<REG> reg;
-    optionale<MOD> mod;
-    optionale_base<RM, uint8_t, 255>  rm;
-};
-
-static_assert(sizeof(unpacked_bitmap) == 8);
-
-template<typename packed>
-unpacked_bitmap unpack_bitmap(packed data) {
-    using namespace details;
-    unpacked_bitmap result;
-
-    if constexpr (has_d<packed>) {
-        *(result.d)   = data.d;
-    }
-    if constexpr (has_w<packed>) {
-        *(result.w)   = data.w;
-    }
-    if constexpr (has_s<packed>) {
-        *(result.s)   = data.s;
-    }
-    if constexpr (has_v<packed>) {
-        *(result.v)   = data.v;
-    }
-    if constexpr (has_z<packed>) {
-        *(result.z)   = data.z;
-    }
-    if constexpr (has_mod<packed>) {
-        *(result.mod) = data.mod;
-    }
-    if constexpr (has_reg<packed>) {
-        *(result.reg) = data.reg;
-    }
-    if constexpr (has_rm<packed>) {
-        (*(result.rm)).rm  = data.rm;
-    }
-
-    return result;
-}
-
-//also any that could be decribed as "just a num, including addresses"
 typedef int16_t label_arg_t;
 
 struct immediate_w_arg_t {

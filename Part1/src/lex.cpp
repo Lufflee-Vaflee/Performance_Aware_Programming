@@ -1,5 +1,6 @@
 #include "lex.hpp"
 #include "LT.hpp"
+#include "opcode.hpp"
 
 #include <algorithm>
 #include <sstream>
@@ -14,10 +15,9 @@ using namespace decode;
 
 class label_gen {
    public:
-    label_gen(stream_it_t begin) :
-        m_begin(begin) {}
+    label_gen() = default;
 
-    std::optional<std::size_t> check_for_label(stream_it_t abs) {
+    std::optional<std::size_t> check_for_label(stream_it_t abs) const {
         std::size_t pos = abs - m_begin;
         auto it = m_table.find(pos);
         if(it == m_table.end()) {
@@ -33,10 +33,11 @@ class label_gen {
         m_label_inc++;
     }
 
+    stream_it_t m_begin;
+
    private:
     std::unordered_map<std::size_t, std::size_t> m_table;
     std::size_t m_label_inc = 1;
-    stream_it_t m_begin;
 };
 
 
@@ -56,31 +57,31 @@ inline std::string format_displacment(int16_t displacment) {
 }
 
 
-inline std::string format_immediate(int16_t immediate, opcode::W w) {
+inline std::string format_immediate(opcode::immediate_w_arg_t im) {
     std::stringstream result;
-    result << (w ? "word " : "byte ") << immediate;
+    result << (im.w ? "word " : "byte ") << im.im;
     return result.str();
 }
 
-inline std::string decode_REG(opcode::REG const& reg, opcode::W const& w) noexcept {
+inline std::string lex_REG(opcode::reg_arg_t reg) noexcept {
     using namespace opcode;
-    switch(reg) {
-        case REG::AL_AX: return w ? "AX" : "AL";
-        case REG::CL_CX: return w ? "CX" : "CL";
-        case REG::DL_DX: return w ? "DX" : "DL";
-        case REG::BL_BX: return w ? "BX" : "BL";
-        case REG::AH_SP: return w ? "SP" : "AH";
-        case REG::CH_BP: return w ? "BP" : "CH";
-        case REG::DH_SI: return w ? "SI" : "DH";
-        case REG::BH_DI: return w ? "DI" : "BH";
+    switch(reg.reg) {
+        case REG::AL_AX: return reg.w ? "AX" : "AL";
+        case REG::CL_CX: return reg.w ? "CX" : "CL";
+        case REG::DL_DX: return reg.w ? "DX" : "DL";
+        case REG::BL_BX: return reg.w ? "BX" : "BL";
+        case REG::AH_SP: return reg.w ? "SP" : "AH";
+        case REG::CH_BP: return reg.w ? "BP" : "CH";
+        case REG::DH_SI: return reg.w ? "SI" : "DH";
+        case REG::BH_DI: return reg.w ? "DI" : "BH";
     }
 
     std::unreachable();
 }
 
-inline std::string decode_ADDR_CALC(opcode::DIS const& calc) noexcept {
+inline std::string lex_DIS(opcode::DIS dis) noexcept {
     using namespace opcode;
-    switch(calc) {
+    switch(dis) {
         case DIS::BX_SI : return "BX + SI";
         case DIS::BX_DI : return "BX + DI";
         case DIS::BP_SI : return "BP + SI";
@@ -95,8 +96,92 @@ inline std::string decode_ADDR_CALC(opcode::DIS const& calc) noexcept {
 }
 
 
-std::stringstream& lex(opcode::decoded) {
-    
+inline std::string lex_DIS(opcode::dis_mem_arg_t im) noexcept {
+    std::stringstream str;
+    str << lex_DIS(im.reg) << format_displacment(im.displacment);
+    return str.str();
+}
+
+inline std::string format_mem(std::string mem) {
+    std::stringstream str;
+    str << '[' << mem << ']';
+    return str.str();
+}
+
+inline std::string format_mem(opcode::mem_arg_t direct) {
+    std::stringstream str;
+    str << (direct.w ? "word" : "byte") << " [" << direct.mem << ']';
+    return str.str();
+}
+
+static label_gen gen;
+static stream_it_t current_ip_position;
+
+inline std::string lex_label(opcode::label_arg_t l) {
+    auto label = gen.check_for_label(current_ip_position + l);
+    assert(label.has_value());
+    return std::string("label") + std::to_string(*label);
+}
+
+std::string arg_lex(opcode::arg_t arg) {
+    using namespace opcode;
+
+    struct visitor {
+        std::string operator()(reg_arg_t reg) const { return lex_REG(reg); }
+        std::string operator()(DIS dis) const { return format_mem(lex_DIS(dis)); }
+        std::string operator()(dis_mem_arg_t mem) const { return format_mem(lex_DIS(mem)); }
+        std::string operator()(label_arg_t l) const { return lex_label(l); }
+        std::string operator()(immediate_w_arg_t im) const { return format_immediate(im); }
+        std::string operator()(mem_arg_t direct) const { return format_mem(direct); }
+        std::string operator()(no_arg_t no_arg) const { return ""; }
+    };
+
+    return std::visit(visitor{}, arg);
+}
+
+std::string opcode_lex(opcode::ID id) {
+    using namespace opcode;
+    switch(id) {
+    case MOV_RM_R:
+    case MOV_I_RM:
+    case MOV_I_R:
+    case MOV_M_A:
+        return "MOV";
+    case ADD_RM_R:
+    case ADD_I_RM:
+    case ADD_I_A:
+        return "ADD";
+    case SUB_RM_R:
+    case SUB_I_RM:
+    case SUB_I_A:
+        return "SUB";
+    case CMP_RM_R:
+    case CMP_I_RM:
+    case CMP_I_A:
+        return "CMP";
+    case JZ :    return "JZ";
+    case JL :    return "JL";
+    case JLE:    return "JLE";
+    case JB :    return "JB";
+    case JBE:    return "JBE";
+    case JP :    return "JP";
+    case JO :    return "JO";
+    case JS :    return "JS";
+    case JNE:    return "JNE";
+    case JNL:    return "JNL";
+    case JG :    return "JG";
+    case JAE:    return "JAE";
+    case JA :    return "JA";
+    case JPO:    return "JPO";
+    case JNO:    return "JNO";
+    case JNS:    return "JNS";
+    case LOOP :  return "LOOP";
+    case LOOPZ:  return "LOOPZ";
+    case LOOPNZ: return "LOOPNZ";
+    case JCXZ:   return "JCXZ";
+    default:
+        throw "ALARM";
+    }
 }
 
 inline bool is_conditional_jmp(opcode::ID id) {
@@ -105,7 +190,7 @@ inline bool is_conditional_jmp(opcode::ID id) {
 }
 
 void cycle(decode::stream_it_t begin, decode::stream_it_t end) {
-    label_gen gen(begin);
+    gen.m_begin = begin;
 
     std::vector<std::pair<opcode::decoded, decode::stream_it_t>> instructions;
     for(auto it = begin; it != end;) {
@@ -119,11 +204,17 @@ void cycle(decode::stream_it_t begin, decode::stream_it_t end) {
     }
 
     for(auto it = instructions.begin(); it != instructions.end(); ++it) {
-        auto current_cs_position = (*it).second;
-        auto label_num = gen.check_for_label(current_cs_position);
+        current_ip_position = (*it).second;
+        auto label_num = gen.check_for_label(current_ip_position);
 
-        //std::cout << (*it).first << '\n';
-        if(label_num != std::numeric_limits<std::size_t>::max()) {
+        std::string rhs = arg_lex(it->first.RHS);
+        std::cout << opcode_lex(it->first.id) << " " << arg_lex(it->first.LHS);
+        if(rhs.size() != 0) {
+            std::cout << ", " << arg_lex(it->first.RHS);
+        }
+        std::cout << '\n';
+
+        if(label_num.has_value()) {
             std::cout << "label" << *label_num << ":\n";
         }
 

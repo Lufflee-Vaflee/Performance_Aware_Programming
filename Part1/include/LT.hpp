@@ -42,36 +42,36 @@ constexpr auto CMP_RM_R = "001110xxxxxxxxxx_2"_bit3;
 SET_BITMAP(CMP_RM_R, W w : 1; D d : 1; B b : 6; B rm : 3; REG reg : 3; MOD mod : 2;, "CMP")
 
 constexpr auto CMP_I_RM = "100000xxxx111xxx_3"_bit3;
-SET_BITMAP(CMP_I_RM, W w : 1; S s : 1; B b : 6; B rm : 3; B b1 : 3; MOD mod : 2;, "CMP")
+SET_BITMAP(CMP_I_RM, W w : 1; S s : 1; B b : 6; B rm : 3; B b2 : 3; MOD mod : 2;, "CMP")
 
 constexpr auto CMP_I_A  = "0011110xxxxxxxxx_3"_bit3;
-SET_BITMAP(CMP_I_A, W w : 1; S s : 1; B b : 6; B rm : 3; B b1 : 3; MOD mod : 2;, "CMP")
+SET_BITMAP(CMP_I_A, W w : 1; B b : 7;, "CMP")
 
 //General conditional jump mask
 constexpr auto J        = "011xxxxxxxxxxxxx_0"_bit3;
 //NOTE: not included in general table, since second inderection is more effective, 
 //however internal 3+5bit ids are still valid
-constexpr auto JZ       = "01110100xxxxxxxx_0"_bit3;  SET_REFLECTION(JZ,  "JZ")
-constexpr auto JL       = "01111100xxxxxxxx_1"_bit3;  SET_REFLECTION(JL,  "JL")
-constexpr auto JLE      = "01111110xxxxxxxx_2"_bit3;  SET_REFLECTION(JLE, "JLE")
-constexpr auto JB       = "01110010xxxxxxxx_3"_bit3;  SET_REFLECTION(JB,  "JB")
-constexpr auto JBE      = "01110110xxxxxxxx_4"_bit3;  SET_REFLECTION(JBE, "JBE")
-constexpr auto JP       = "01111010xxxxxxxx_5"_bit3;  SET_REFLECTION(JP,  "JP")
-constexpr auto JO       = "01110000xxxxxxxx_6"_bit3;  SET_REFLECTION(JO,  "JO")
-constexpr auto JS       = "01111000xxxxxxxx_7"_bit3;  SET_REFLECTION(JS,  "JS")
-constexpr auto JNE      = "01110101xxxxxxxx_8"_bit3;  SET_REFLECTION(JNE, "JNE")
-constexpr auto JNL      = "01111101xxxxxxxx_9"_bit3;  SET_REFLECTION(JNL, "JNL")
-constexpr auto JG       = "01111111xxxxxxxx_10"_bit3; SET_REFLECTION(JG,  "JG")
-constexpr auto JAE      = "01110011xxxxxxxx_11"_bit3; SET_REFLECTION(JAE, "JAE")
-constexpr auto JA       = "01110111xxxxxxxx_12"_bit3; SET_REFLECTION(JA,  "JA")
-constexpr auto JPO      = "01111011xxxxxxxx_13"_bit3; SET_REFLECTION(JPO, "JPO")
-constexpr auto JNO      = "01110001xxxxxxxx_14"_bit3; SET_REFLECTION(JNO, "JNO")
-constexpr auto JNS      = "01111001xxxxxxxx_15"_bit3; SET_REFLECTION(JNS, "JNS")
+constexpr auto JZ       = "01110100xxxxxxxx_0"_bit3; 
+constexpr auto JL       = "01111100xxxxxxxx_1"_bit3; 
+constexpr auto JLE      = "01111110xxxxxxxx_2"_bit3; 
+constexpr auto JB       = "01110010xxxxxxxx_3"_bit3; 
+constexpr auto JBE      = "01110110xxxxxxxx_4"_bit3; 
+constexpr auto JP       = "01111010xxxxxxxx_5"_bit3; 
+constexpr auto JO       = "01110000xxxxxxxx_6"_bit3; 
+constexpr auto JS       = "01111000xxxxxxxx_7"_bit3; 
+constexpr auto JNE      = "01110101xxxxxxxx_8"_bit3; 
+constexpr auto JNL      = "01111101xxxxxxxx_9"_bit3; 
+constexpr auto JG       = "01111111xxxxxxxx_10"_bit3;
+constexpr auto JAE      = "01110011xxxxxxxx_11"_bit3;
+constexpr auto JA       = "01110111xxxxxxxx_12"_bit3;
+constexpr auto JPO      = "01111011xxxxxxxx_13"_bit3;
+constexpr auto JNO      = "01110001xxxxxxxx_14"_bit3;
+constexpr auto JNS      = "01111001xxxxxxxx_15"_bit3;
 
-constexpr auto LOOP     = "11100010xxxxxxxx_0"_bit3;  SET_REFLECTION(LOOP,   "LOOP")
-constexpr auto LOOPZ    = "11100001xxxxxxxx_1"_bit3;  SET_REFLECTION(LOOPZ,  "LOOPZ")
-constexpr auto LOOPNZ   = "11100000xxxxxxxx_2"_bit3;  SET_REFLECTION(LOOPNZ, "LOOPNZ")
-constexpr auto JCXZ     = "11100011xxxxxxxx_3"_bit3;  SET_REFLECTION(JCXZ,   "JCXZ")
+constexpr auto LOOP     = "11100010xxxxxxxx_0"_bit3; 
+constexpr auto LOOPZ    = "11100001xxxxxxxx_1"_bit3; 
+constexpr auto LOOPNZ   = "11100000xxxxxxxx_2"_bit3; 
+constexpr auto JCXZ     = "11100011xxxxxxxx_3"_bit3; 
 
 namespace details {
 

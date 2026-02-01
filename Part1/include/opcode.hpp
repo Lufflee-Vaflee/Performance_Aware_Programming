@@ -39,14 +39,14 @@ enum class DIS : uint8_t {
 };
 
 struct RM {
-    uint8_t rw;
+    uint8_t rm;
 
     operator DIS() {
-        return static_cast<DIS>(rw);
+        return static_cast<DIS>(rm);
     }
 
     operator REG() {
-        return static_cast<REG>(rw);
+        return static_cast<REG>(rm);
     }
 };
 
@@ -56,20 +56,7 @@ struct get_bitmap {
     using t = void;
 };
 
-template<ID id>
-struct get_reflection {
-    static_assert(false);
-};
-
-#define SET_REFLECTION(OP, LEX)     \
-template<>                          \
-struct get_reflection<OP> {         \
-    static constexpr std::string_view lex = LEX;   \
-};
-
 #define SET_BITMAP(OP, TYPE, LEX)   \
-SET_REFLECTION(OP, LEX)             \
-                                    \
 template<>                          \
 struct get_bitmap<OP> {             \
     using t = struct bitmap{TYPE};                 \
@@ -103,7 +90,7 @@ namespace details {
     template <typename T>
     concept has_reg =   requires(T t) { t.reg; };
     template <typename T>
-    concept has_rw =    requires(T t) { t.rw; };
+    concept has_rm =    requires(T t) { t.rm; };
 
     template<typename T>
     struct optionale_selector {
@@ -166,8 +153,6 @@ struct optionale_base {
 template<typename T>
 struct optionale : optionale_base<T> {};
 
-static constexpr uint8_t test = 255;
-
 // zero-initialized
 struct unpacked_bitmap {
     optionale<D> d;
@@ -177,7 +162,7 @@ struct unpacked_bitmap {
     optionale<Z> z;
     optionale<REG> reg;
     optionale<MOD> mod;
-    optionale_base<RM, uint8_t, test>  rm;
+    optionale_base<RM, uint8_t, 255>  rm;
 };
 
 static_assert(sizeof(unpacked_bitmap) == 8);
@@ -208,27 +193,41 @@ unpacked_bitmap unpack_bitmap(packed data) {
     if constexpr (has_reg<packed>) {
         *(result.reg) = data.reg;
     }
-    if constexpr (has_rw<packed>) {
-        *(result.rm)  = data.rw;
+    if constexpr (has_rm<packed>) {
+        (*(result.rm)).rm  = data.rm;
     }
 
     return result;
 }
 
 //also any that could be decribed as "just a num, including addresses"
-using immediate = int16_t;
-using direct_addr = uint16_t;
+typedef int16_t label_arg_t;
 
-struct displacment_mem {
+struct immediate_w_arg_t {
+    int16_t im;
+    W w;
+};
+
+struct mem_arg_t {
+    uint16_t mem;
+    W w;
+};
+
+struct dis_mem_arg_t {
     int16_t displacment;
     DIS reg;
 };
 
-using noarg = uint8_t;
+struct reg_arg_t {
+    REG reg;
+    W   w;
+};
 
-static_assert(sizeof(displacment_mem) == 4);
+typedef uint8_t no_arg_t;
 
-using arg_t = std::variant<REG, DIS, immediate, displacment_mem, direct_addr, noarg>;
+static_assert(sizeof(dis_mem_arg_t) == 4);
+
+using arg_t = std::variant<reg_arg_t, DIS, label_arg_t, immediate_w_arg_t, dis_mem_arg_t, mem_arg_t, no_arg_t>;
 static_assert(sizeof(arg_t) == 6);
 
 struct decoded {

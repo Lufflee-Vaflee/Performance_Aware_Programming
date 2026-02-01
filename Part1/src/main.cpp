@@ -4,6 +4,7 @@
 #include <cstring>
 
 #include "decode.hpp"
+#include "lex.hpp"
 
 constexpr const char* head = "bits 16\n\n";
 bool lex_mod = false;
@@ -41,7 +42,7 @@ int main(int argc, char** argv) {
 
     std::cout << head;
     try {
-        //decode::decode(instr_stream.begin(), instr_stream.end());
+        lex::cycle(mem.begin(), (mem.end() - safe_bytes));
     } catch(const char * str) {
         std::cout << str << '\n';
     } catch(...) {

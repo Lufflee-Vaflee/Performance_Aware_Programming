@@ -3,6 +3,7 @@
 #include <cstring>
 #include <utility>
 
+#include "LT.hpp"
 #include "op.hpp"
 
 namespace decode {
@@ -144,6 +145,50 @@ std::pair<op::arg_t, int> decode_AX(bitmap_t bitmap, stream_it_t begin, stream_i
     return { ARG_reg, 0 };
 }
 
+inline op::logical code_to_op(code::ID id) {
+    switch(id) {
+    case code::MOV_RM_R:
+    case code::MOV_I_RM:
+    case code::MOV_I_R:
+    case code::MOV_M_A:
+        return op::MOV;
+    case code::ADD_RM_R:
+    case code::ADD_I_RM:
+    case code::ADD_I_A:
+        return op::ADD;
+    case code::SUB_RM_R:
+    case code::SUB_I_RM:
+    case code::SUB_I_A:
+        return op::SUB;
+    case code::CMP_RM_R:
+    case code::CMP_I_RM:
+    case code::CMP_I_A:
+        return op::CMP;
+    case code::JZ :    return op::JZ;
+    case code::JL :    return op::JL;
+    case code::JLE:    return op::JLE;
+    case code::JB :    return op::JB;
+    case code::JBE:    return op::JBE;
+    case code::JP :    return op::JP;
+    case code::JO :    return op::JO;
+    case code::JS :    return op::JS;
+    case code::JNE:    return op::JNE;
+    case code::JNL:    return op::JNL;
+    case code::JG :    return op::JG;
+    case code::JAE:    return op::JAE;
+    case code::JA :    return op::JA;
+    case code::JPO:    return op::JPO;
+    case code::JNO:    return op::JNO;
+    case code::JNS:    return op::JNS;
+    case code::LOOP :  return op::LOOP;
+    case code::LOOPZ:  return op::LOOPZ;
+    case code::LOOPNZ: return op::LOOPNZ;
+    case code::JCXZ:   return op::JCXZ;
+    default:
+        throw "ALARM";
+    }
+}
+
 template<code::ID id>
 using arg_delegator_t = std::pair<op::arg_t, int>(typename code::get_bitmap<id>::t, stream_it_t, stream_it_t);
 
@@ -166,7 +211,7 @@ decode_inst_t generalized_decode(stream_it_t begin, stream_it_t end) {
     }
 
     
-    return { { op::code_to_op(id), LHS_d.first, RHS_d.first }, size };
+    return { { code_to_op(id), LHS_d.first, RHS_d.first }, size };
 }
 
 template<code::ID c_id = 256>
@@ -179,7 +224,7 @@ decode_inst_t decode_conditional_j(stream_it_t begin, stream_it_t end) {
     }
 
     op::label_arg_t im = *(begin + 1);
-    return { { op::code_to_op(id), im, op::no_arg_t{} }, 2};
+    return { { code_to_op(id), im, op::no_arg_t{} }, 2};
 }
 
 op::decoded decode(stream_it_t& begin, stream_it_t end) {

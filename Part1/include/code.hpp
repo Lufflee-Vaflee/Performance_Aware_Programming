@@ -1,7 +1,6 @@
 #pragma once
 
 #include <cassert>
-#include <variant>
 
 #include "bit3mask.hpp"
 

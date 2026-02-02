@@ -1,6 +1,7 @@
 #pragma once
 
-#include "LT.hpp"
+#include "code.hpp"
+#include <variant>
 
 namespace op {
 
@@ -30,50 +31,6 @@ enum logical {
     LOOPNZ,
     JCXZ,
 };
-
-inline logical code_to_op(code::ID id) {
-    switch(id) {
-    case code::MOV_RM_R:
-    case code::MOV_I_RM:
-    case code::MOV_I_R:
-    case code::MOV_M_A:
-        return MOV;
-    case code::ADD_RM_R:
-    case code::ADD_I_RM:
-    case code::ADD_I_A:
-        return ADD;
-    case code::SUB_RM_R:
-    case code::SUB_I_RM:
-    case code::SUB_I_A:
-        return SUB;
-    case code::CMP_RM_R:
-    case code::CMP_I_RM:
-    case code::CMP_I_A:
-        return CMP;
-    case code::JZ :    return JZ;
-    case code::JL :    return JL;
-    case code::JLE:    return JLE;
-    case code::JB :    return JB;
-    case code::JBE:    return JBE;
-    case code::JP :    return JP;
-    case code::JO :    return JO;
-    case code::JS :    return JS;
-    case code::JNE:    return JNE;
-    case code::JNL:    return JNL;
-    case code::JG :    return JG;
-    case code::JAE:    return JAE;
-    case code::JA :    return JA;
-    case code::JPO:    return JPO;
-    case code::JNO:    return JNO;
-    case code::JNS:    return JNS;
-    case code::LOOP :  return LOOP;
-    case code::LOOPZ:  return LOOPZ;
-    case code::LOOPNZ: return LOOPNZ;
-    case code::JCXZ:   return JCXZ;
-    default:
-        throw "ALARM";
-    }
-}
 
 typedef int16_t label_arg_t;
 

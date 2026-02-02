@@ -22,6 +22,8 @@ build/decode.o: src/decode.cpp include/decode.hpp include/op.hpp
 build/lex.o: src/lex.cpp include/lex.hpp include/op.hpp
 	g++ -c $(CXXFLAGS) $(INC) src/lex.cpp -o build/lex.o
 
+build/state_transition.o: src/state_transition.cpp include/state_transition.hpp include/op.hpp
+	g++ -c $(CXXFLAGS) $(INC) src/lex.cpp -o build/lex.o
 
 include/code.hpp: include/bit3mask.hpp
 

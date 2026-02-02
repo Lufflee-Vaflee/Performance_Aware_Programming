@@ -1,5 +1,6 @@
 #include "lex.hpp"
 #include "op.hpp"
+#include "state_transition.hpp"
 
 #include <algorithm>
 #include <sstream>
@@ -7,6 +8,7 @@
 #include <unordered_map>
 #include <optional>
 #include <iostream>
+#include <vector>
 
 namespace lex {
 
@@ -120,7 +122,6 @@ inline std::string format_mem(op::mem_arg_t direct) {
 
 //TODO: could be better
 static label_gen gen;
-static stream_it_t current_ip_position;
 
 inline std::string lex_label(op::label_arg_t l) {
     auto label = gen.check_for_label(current_ip_position + l);
@@ -185,7 +186,8 @@ inline bool is_conditional_jmp(op::logical id) {
     return (id > JO && id < JCXZ);
 }
 
-void cycle(decode::stream_it_t begin, decode::stream_it_t end) {
+void cycle() {
+    auto [begin, end] = state::state::getInstance().get_mem();
     gen.reset(begin);
 
     std::vector<std::pair<op::decoded, decode::stream_it_t>> instructions;

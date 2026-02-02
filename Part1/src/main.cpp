@@ -3,24 +3,25 @@
 #include <fstream>
 #include <cstring>
 
-#include "decode.hpp"
 #include "lex.hpp"
+#include "state_transition.hpp"
 
 constexpr const char* head = "bits 16\n\n";
 bool lex_mod = false;
-//temporary measure to remove uneescesarry bouandary checks, until state model is made
-constexpr size_t safe_bytes = 6;
 
-decode::data_stream_t load_input_stream(std::fstream& stream) {
-    std::vector<char> result;
+void load_input_stream(std::fstream& stream) {
     stream.seekg(0, std::ios::end);
     auto fsize = static_cast<std::size_t>(stream.tellg());
     stream.seekg(0, std::ios::beg);
     //add few dummy bytes to ensure that 
-    result.resize(fsize + safe_bytes);
+    auto st = state::state::getInstance().get_mem();
 
-    stream.read(static_cast<char*>(result.data()), fsize);
-    return result;
+    if(fsize > state::max_mem_size) {
+        throw "shit";
+    }
+
+    stream.read(st.first, fsize);
+    return;
 }
 
 int main(int argc, char** argv) {
@@ -38,11 +39,10 @@ int main(int argc, char** argv) {
         lex_mod = true;
     }
 
-    auto mem = load_input_stream(binary);
 
     std::cout << head;
     try {
-        lex::cycle(mem.begin(), (mem.end() - safe_bytes));
+        lex::cycle();
     } catch(const char * str) {
         std::cout << str << '\n';
     } catch(...) {

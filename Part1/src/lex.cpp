@@ -1,6 +1,6 @@
 #include "lex.hpp"
 #include "op.hpp"
-#include "state_transition.hpp"
+#include "decode.hpp"
 
 #include <algorithm>
 #include <sstream>
@@ -122,6 +122,7 @@ inline std::string format_mem(op::mem_arg_t direct) {
 
 //TODO: could be better
 static label_gen gen;
+static stream_it_t current_ip_position;
 
 inline std::string lex_label(op::label_arg_t l) {
     auto label = gen.check_for_label(current_ip_position + l);

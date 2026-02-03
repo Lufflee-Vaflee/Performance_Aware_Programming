@@ -57,7 +57,6 @@ class state {
         return { mem.begin(), mem.end() };
     }
 
-   private:
     RX IP = 0;
     FREG freg;
 

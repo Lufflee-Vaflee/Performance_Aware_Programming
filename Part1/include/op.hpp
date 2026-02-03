@@ -32,7 +32,7 @@ enum logical {
     JCXZ,
 };
 
-typedef int16_t label_arg_t;
+typedef uint8_t label_arg_t;
 
 struct immediate_w_arg_t {
     int16_t im;

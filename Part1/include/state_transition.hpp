@@ -70,6 +70,7 @@ class state {
         std::cout << "BX: " << regs[1].rx << '\n';
         std::cout << "CX: " << regs[2].rx << '\n';
         std::cout << "DX: " << regs[3].rx << '\n';
+        std
 
         std::cout << "---------------------------------------\n";
     }

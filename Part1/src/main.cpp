@@ -8,19 +8,20 @@
 
 constexpr const char* head = "bits 16\n\n";
 bool lex_mod = false;
+std::size_t size = 0;
 
 void load_input_stream(std::fstream& stream) {
     stream.seekg(0, std::ios::end);
-    auto fsize = static_cast<std::size_t>(stream.tellg());
+    size = static_cast<std::size_t>(stream.tellg());
     stream.seekg(0, std::ios::beg);
     //add few dummy bytes to ensure that 
     auto st = state::state::getInstance().get_mem();
 
-    if(fsize > state::max_mem_size) {
+    if(size > state::max_mem_size) {
         throw "shit";
     }
 
-    stream.read(st.first, fsize);
+    stream.read(st.first, size);
     return;
 }
 
@@ -39,10 +40,12 @@ int main(int argc, char** argv) {
         lex_mod = true;
     }
 
+    load_input_stream(binary);
 
+    auto begin = state::state::getInstance().get_mem().first;
     std::cout << head;
     try {
-        lex::cycle();
+        state::cycle(begin, begin + size);
     } catch(const char * str) {
         std::cout << str << '\n';
     } catch(...) {

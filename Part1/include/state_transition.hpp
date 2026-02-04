@@ -2,6 +2,7 @@
 
 #include <cstdint>
 #include <array>
+#include <iostream>
 
 namespace state {
 
@@ -63,9 +64,18 @@ class state {
     std::array<R, 8> regs;  //general purpose
     std::array<RX, 4> segment_regs;
     mem_t mem;
+
+    void dump(mem_it_t begin, mem_it_t end) {
+        std::cout << "AX: " << regs[0].rx << '\n';
+        std::cout << "BX: " << regs[1].rx << '\n';
+        std::cout << "CX: " << regs[2].rx << '\n';
+        std::cout << "DX: " << regs[3].rx << '\n';
+
+        std::cout << "---------------------------------------\n";
+    }
 };
 
-inline void cycle(mem_it_t begin, mem_it_t end);
+void cycle(mem_it_t begin, mem_it_t end);
 
 }
 

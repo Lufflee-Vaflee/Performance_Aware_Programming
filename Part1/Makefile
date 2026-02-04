@@ -10,8 +10,8 @@ all: build test
 
 build: build/8086sim
 
-build/8086sim: build/main.o build/decode.o build/lex.o
-	g++ -o build/8086sim build/main.o build/decode.o build/lex.o
+build/8086sim: build/main.o build/decode.o build/lex.o build/state_transition.o
+	g++ -o build/8086sim build/main.o build/decode.o build/lex.o build/state_transition.o
 
 build/main.o: src/main.cpp include/decode.hpp include/lex.hpp
 	g++ -c $(CXXFLAGS) $(INC) src/main.cpp -o build/main.o
@@ -23,7 +23,7 @@ build/lex.o: src/lex.cpp include/lex.hpp include/op.hpp
 	g++ -c $(CXXFLAGS) $(INC) src/lex.cpp -o build/lex.o
 
 build/state_transition.o: src/state_transition.cpp include/state_transition.hpp include/op.hpp
-	g++ -c $(CXXFLAGS) $(INC) src/lex.cpp -o build/lex.o
+	g++ -c $(CXXFLAGS) $(INC) src/state_transition.cpp -o build/state_transition.o
 
 include/code.hpp: include/bit3mask.hpp
 

@@ -16,8 +16,8 @@ class state {
     using RX = std::uint16_t;
 
     struct RHL {
-        uint8_t RL;
-        uint8_t RH;
+        uint8_t rl;
+        uint8_t rh;
     };
 
     union R {

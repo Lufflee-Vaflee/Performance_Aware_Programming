@@ -32,7 +32,7 @@ enum logical {
     JCXZ,
 };
 
-typedef uint8_t label_arg_t;
+typedef int8_t label_arg_t;
 
 struct immediate_w_arg_t {
     int16_t im;
@@ -45,7 +45,7 @@ struct mem_arg_t {
 };
 
 struct dis_mem_arg_t {
-    int16_t displacment;
+    int16_t dis;
     code::DIS reg;
 };
 
@@ -54,7 +54,7 @@ struct reg_arg_t {
     code::W   w;
 };
 
-typedef uint8_t no_arg_t;
+typedef bool no_arg_t;
 
 static_assert(sizeof(dis_mem_arg_t) == 4);
 
@@ -69,5 +69,5 @@ struct decoded {
 
 static_assert(sizeof(decoded) == 16);
 
-
 }
+

@@ -104,7 +104,7 @@ inline std::string lex_DIS(code::DIS dis) noexcept {
 
 inline std::string lex_DIS(op::dis_mem_arg_t im) noexcept {
     std::stringstream str;
-    str << lex_DIS(im.reg) << format_displacment(im.displacment);
+    str << lex_DIS(im.reg) << format_displacment(im.dis);
     return str.str();
 }
 

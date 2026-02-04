@@ -65,7 +65,7 @@ std::pair<op::arg_t, int> decode_RM(bitmap_t bitmap, stream_it_t begin, stream_i
             ARG_dis = { *(begin), DIS(bitmap.rm) };
             return { ARG_dis, 1 };
         case MOD::MEM_16_DISPLACMENT:
-            raw_deserialize<int16_t>(ARG_dis.displacment, begin, end);
+            raw_deserialize<int16_t>(ARG_dis.dis, begin, end);
             ARG_dis.reg = DIS(bitmap.rm);
             return { ARG_dis, 2 };
     }

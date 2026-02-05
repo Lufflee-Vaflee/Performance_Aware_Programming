@@ -11,8 +11,9 @@ using mem_t = std::array<char, max_mem_size>;
 using mem_it_t = mem_t::iterator;
 
 class state {
-   private:
     state() = default;
+
+   public:
 
     using RX = std::uint16_t;
 
@@ -70,7 +71,6 @@ class state {
         std::cout << "BX: " << regs[1].rx << '\n';
         std::cout << "CX: " << regs[2].rx << '\n';
         std::cout << "DX: " << regs[3].rx << '\n';
-        std
 
         std::cout << "---------------------------------------\n";
     }

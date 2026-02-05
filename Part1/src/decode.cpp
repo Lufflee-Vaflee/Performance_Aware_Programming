@@ -22,23 +22,6 @@ code::ID peek_opcode_ident(decode::stream_it_t begin) {
     return lt[opcode];
 }
 
-template<typename T>
-//TODO add POD restriction
-void raw_deserialize(T& dest, stream_it_t begin, stream_it_t end) {
-    char* c_dest = reinterpret_cast<char*>(&dest);
-    stream_it_t c_end = begin + sizeof(T);
-    assert(end >= c_end);
-
-    std::size_t i = 0;
-    while(begin != c_end) {
-        c_dest[i] = *begin;
-        begin++;
-        i++;
-    }
-
-    return;
-}
-
 template<typename bitmap_t>
 std::pair<op::arg_t, int> decode_RM(bitmap_t bitmap, stream_it_t begin, stream_it_t end) {
     using namespace code;

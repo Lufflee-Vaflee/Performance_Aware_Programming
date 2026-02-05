@@ -187,8 +187,7 @@ inline bool is_conditional_jmp(op::logical id) {
     return (id > JO && id < JCXZ);
 }
 
-void cycle() {
-    auto [begin, end] = state::state::getInstance().get_mem();
+void cycle(stream_it_t begin, stream_it_t end) {
     gen.reset(begin);
 
     std::vector<std::pair<op::decoded, decode::stream_it_t>> instructions;

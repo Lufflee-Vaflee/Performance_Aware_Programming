@@ -193,7 +193,7 @@ void cmp_dispatch(op::arg_t lhs, op::arg_t rhs) {
     return;
 }
 
-void cycle(mem_it_t begin, mem_it_t end) {
+void cycle(mem_it_t begin, mem_it_t end, mem_it_t dump_end) {
     while((begin + st.IP) != end) { // TODO: change ending execution method
         mem_it_t cur = begin + st.IP;
         auto op = decode::decode(cur, end);
@@ -281,7 +281,13 @@ void cycle(mem_it_t begin, mem_it_t end) {
             throw "unimplemented dispatch for logical op";
         }
 
-        st.dump(begin, end);
+        if(dump_end == end) st.dump(begin, end);
+    }
+
+    if(dump_end != end) {
+        for(auto it = begin; it != dump_end; ++it) {
+            std::cout << *it;
+        }
     }
 }
 

@@ -6,7 +6,7 @@
 
 namespace state {
 
-constexpr std::size_t max_mem_size = 65536;
+constexpr std::size_t max_mem_size = 1048576;
 using mem_t = std::array<char, max_mem_size>;
 using mem_it_t = mem_t::iterator;
 
@@ -114,7 +114,7 @@ class state {
     }
 };
 
-void cycle(mem_it_t begin, mem_it_t end);
+void cycle(mem_it_t begin, mem_it_t end, mem_it_t dump_end);
 
 }
 

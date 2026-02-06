@@ -42,16 +42,14 @@ int main(int argc, char** argv) {
         return 0;
     }
 
-
     load_input_stream(binary);
 
     auto begin = state::state::getInstance().get_mem().first;
-    std::cout << head;
     try {
         if(lex_mod) {
             lex::cycle(begin, begin + size);
         } else {
-            state::cycle(begin, begin + size);
+            state::cycle(begin, begin + size, begin + 1048576);
         }
     } catch(const char * str) {
         std::cout << str << '\n';

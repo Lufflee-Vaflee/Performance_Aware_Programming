@@ -71,41 +71,42 @@ cmp ax, [bp]
 cmp al, [bx + si]
 
 mov cx, 10
-label0:
 mov ax, 0
+label0:
 add ax, 1
-loop label0
+add cx, -1
+jnz label0
 cmp ax, bx
 cmp al, ah
 cmp ax, 1000
 cmp al, -30
 cmp al, 9
 
-test_label0:
-jnz test_label1
-jnz test_label0
-test_label1:
-jnz test_label0
-jnz test_label1
-
-label:
-je label
-jl label
-jle label
-jb label
-jbe label
-jp label
-jo label
-js label
-jne label
-jnl label
-jg label
-jnb label
-ja label
-jnp label
-jno label
-jns label
-loop label
-loopz label
-loopnz label
-jcxz label
+;test_label0:
+;jnz test_label1
+;jnz test_label0
+;test_label1:
+;jnz test_label0
+;jnz test_label1
+;
+;label:
+;je label
+;jl label
+;jle label
+;jb label
+;jbe label
+;jp label
+;jo label
+;js label
+;jne label
+;jnl label
+;jg label
+;jnb label
+;ja label
+;jnp label
+;jno label
+;jns label
+;loop label
+;loopz label
+;loopnz label
+;jcxz label

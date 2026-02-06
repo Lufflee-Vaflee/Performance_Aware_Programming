@@ -184,7 +184,7 @@ std::string opcode_lex(op::logical id) {
 
 inline bool is_conditional_jmp(op::logical id) {
     using namespace op;
-    return (id > JO && id < JCXZ);
+    return (id >= JO && id <= JCXZ);
 }
 
 void cycle(stream_it_t begin, stream_it_t end) {
@@ -192,13 +192,12 @@ void cycle(stream_it_t begin, stream_it_t end) {
 
     std::vector<std::pair<op::decoded, decode::stream_it_t>> instructions;
     for(auto it = begin; it != end;) {
-        auto save = it;
         auto decoded = decode::decode(it, end);
         if(is_conditional_jmp(decoded.id)) {
-            gen.reg_label(save + std::get<2>(decoded.LHS));
+            gen.reg_label(it + std::get<2>(decoded.LHS));
         }
 
-        instructions.emplace_back(decoded, save);
+        instructions.emplace_back(decoded, it);
     }
 
     for(auto it = instructions.begin(); it != instructions.end(); ++it) {
@@ -210,6 +209,7 @@ void cycle(stream_it_t begin, stream_it_t end) {
         if(rhs.size() != 0) {
             std::cout << ", " << arg_lex(it->first.RHS);
         }
+
         std::cout << '\n';
 
         if(label_num.has_value()) {

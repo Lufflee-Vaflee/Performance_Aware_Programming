@@ -27,25 +27,32 @@ void load_input_stream(std::fstream& stream) {
 
 int main(int argc, char** argv) {
     if(argc < 2 || argc >= 4) {
-        std::cout << "Usage: 8086sim [path_to_encoded_binary] (optional)-lex\n";
+        std::cout << "Usage: 8086sim (optional)-lex [path_to_encoded_binary]\n";
     }
 
-    std::fstream binary(argv[1], std::ios_base::in | std::ios_base::binary);
+    int i = 1;
+    if(argc == 3 && strncmp(argv[1], "-lex", 4)) {
+        lex_mod = true;
+        i++;
+    }
+
+    std::fstream binary(argv[i], std::ios_base::in | std::ios_base::binary);
     if(!binary.is_open()) {
         std::cout << "File didnt found\n";
         return 0;
     }
 
-    if(argc == 3 && strncmp(argv[2], "-lex", 4)) {
-        lex_mod = true;
-    }
 
     load_input_stream(binary);
 
     auto begin = state::state::getInstance().get_mem().first;
     std::cout << head;
     try {
-        state::cycle(begin, begin + size);
+        if(lex_mod) {
+            lex::cycle(begin, begin + size);
+        } else {
+            state::cycle(begin, begin + size);
+        }
     } catch(const char * str) {
         std::cout << str << '\n';
     } catch(...) {

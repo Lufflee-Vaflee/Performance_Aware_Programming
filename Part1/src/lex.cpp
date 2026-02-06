@@ -88,14 +88,14 @@ inline std::string lex_REG(op::reg_arg_t reg) noexcept {
 inline std::string lex_DIS(code::DIS dis) noexcept {
     using namespace code;
     switch(dis) {
-        case DIS::BX_SI : return "BX + SI";
-        case DIS::BX_DI : return "BX + DI";
-        case DIS::BP_SI : return "BP + SI";
-        case DIS::BP_DI : return "BP + DI";
-        case DIS::SI    : return "SI";
-        case DIS::DI    : return "DI";
-        case DIS::DIRECT: return "BP";
-        case DIS::BX    : return "BX";
+        case DIS::BX_SI     : return "BX + SI";
+        case DIS::BX_DI     : return "BX + DI";
+        case DIS::BP_SI     : return "BP + SI";
+        case DIS::BP_DI     : return "BP + DI";
+        case DIS::SI        : return "SI";
+        case DIS::DI        : return "DI";
+        case DIS::DIRECT_BP : return "BP";
+        case DIS::BX        : return "BX";
     }
 
     std::unreachable();

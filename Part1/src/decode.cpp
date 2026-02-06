@@ -36,7 +36,7 @@ std::pair<op::arg_t, int> decode_RM(bitmap_t bitmap, stream_it_t begin, stream_i
             ARG_reg = { REG(bitmap.rm), bitmap.w };
             return { ARG_reg , 0 };
         case MOD::MEM_NO_DISPLACMENT:
-            if((DIS(bitmap.rm)) == DIS::DIRECT) {
+            if((DIS(bitmap.rm)) == DIS::DIRECT_BP) {
                 op::mem_arg_t mem;
                 raw_deserialize<uint16_t>(mem.mem, begin, end);
                 mem.w = true;

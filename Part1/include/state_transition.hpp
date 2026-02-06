@@ -28,6 +28,7 @@ class state {
     };
 
     struct FREG {
+        // Bitfield definitions
         bool        CF: 1;
         uint8_t     b0: 1;
         bool        PF: 1;
@@ -42,7 +43,32 @@ class state {
         bool        OF: 1;
         uint8_t     b3: 4;
 
-        operator uint16_t() {
+        // Default constructor
+        constexpr FREG() : 
+            CF(0), b0(0), PF(0), b1(0), AF(0), b2(0), 
+            ZF(0), SF(0), TF(0), IF(0), DF(0), OF(0), b3(0) {}
+
+        // initializer_list constructor
+        constexpr FREG(std::initializer_list<bool> list) : FREG() {
+            auto it = list.begin();
+            if (it != list.end()) CF = *it++;
+            if (it != list.end()) b0 = *it++;
+            if (it != list.end()) PF = *it++;
+            if (it != list.end()) b1 = *it++;
+            if (it != list.end()) AF = *it++;
+            if (it != list.end()) b2 = *it++;
+            if (it != list.end()) ZF = *it++;
+            if (it != list.end()) SF = *it++;
+            if (it != list.end()) TF = *it++;
+            if (it != list.end()) IF = *it++;
+            if (it != list.end()) DF = *it++;
+            if (it != list.end()) OF = *it++;
+            // b3 is 4 bits, would usually require a separate logic or cast
+        }
+
+        // Must be constexpr to use at compile-time
+        // Note: bit_cast is constexpr since C++20
+        constexpr operator uint16_t() const {
             return std::bit_cast<uint16_t>(*this);
         }
     };
@@ -67,10 +93,22 @@ class state {
     mem_t mem;
 
     void dump(mem_it_t begin, mem_it_t end) {
-        std::cout << "AX: " << regs[0].rx << '\n';
-        std::cout << "BX: " << regs[1].rx << '\n';
-        std::cout << "CX: " << regs[2].rx << '\n';
-        std::cout << "DX: " << regs[3].rx << '\n';
+        static std::size_t count = 0;
+        count++;
+        std::cout << "dump count: " << count << '\n';
+        std::cout << std::hex;
+        std::cout << "AX: 0x" << regs[0].rx << '\n';
+        std::cout << "BX: 0x" << regs[1].rx << '\n';
+        std::cout << "CX: 0x" << regs[2].rx << '\n';
+        std::cout << "DX: 0x" << regs[3].rx << '\n';
+
+        std::cout << "SP: 0x" << regs[4].rx << '\n';
+        std::cout << "BP: 0x" << regs[5].rx << '\n';
+        std::cout << "SI: 0x" << regs[6].rx << '\n';
+        std::cout << "DI: 0x" << regs[7].rx << '\n';
+
+        std::cout << "IP: 0x" << IP << '\n';
+
 
         std::cout << "---------------------------------------\n";
     }

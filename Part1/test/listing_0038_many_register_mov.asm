@@ -1,5 +1,6 @@
 bits 16
 
+mov bx, 2
 mov cx, bx
 mov ch, ah
 mov dx, bx

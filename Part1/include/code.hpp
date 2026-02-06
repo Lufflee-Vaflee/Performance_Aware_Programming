@@ -31,7 +31,7 @@ enum class DIS : uint8_t {
     BP_DI   = 0b011,
     SI      = 0b100,
     DI      = 0b101,
-    DIRECT  = 0b110,
+    DIRECT_BP  = 0b110,
     BX      = 0b111,
 };
 

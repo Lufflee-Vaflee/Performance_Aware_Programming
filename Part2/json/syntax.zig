@@ -480,7 +480,6 @@ pub fn parse_syntax(al: std.mem.Allocator, tokens: []const Token) !Json {
     const result = try parse_value(al, tokens, &root);
     root.value = result.val;
     if (result.tokens.len != 0) {
-        deinit_json(al, root);
         return Errors.incorrect_value_token;
     }
 

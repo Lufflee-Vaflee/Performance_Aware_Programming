@@ -44,6 +44,7 @@ pub fn build(b: *std.Build) void {
 
     b.installArtifact(HaverstineGeneratorExe);
 
+
     const run_step = b.step("run", "Run the app");
     const run_cmd = b.addRunArtifact(HaverstineGeneratorExe);
     run_step.dependOn(&run_cmd.step);
@@ -53,6 +54,26 @@ pub fn build(b: *std.Build) void {
     if (b.args) |args| {
         run_cmd.addArgs(args);
     }
+
+    const perf_mod = b.addModule("perf", .{
+        .root_source_file = b.path("perf/root.zig"),
+        .target = target,
+        .optimize = optimize
+    });
+
+    const perf_test = b.addTest(.{
+        .name = "perf-test",
+        .root_module = perf_mod,
+        .use_llvm = true,
+    });
+
+    const run_perf_test = b.addRunArtifact(perf_test);
+    const perf_step = b.step("test-perf", "Run perf test");
+    perf_step.dependOn(&run_perf_test.step);
+    test_step.dependOn(&run_perf_test.step);
+
+
+    perf_mod.link_libc = true;
 
     const AwareExe = b.addExecutable(.{
         .name = "aware",
@@ -66,6 +87,7 @@ pub fn build(b: *std.Build) void {
 
     AwareExe.root_module.addImport("json",           json_mod);
     AwareExe.root_module.addImport("haverstine_ref", haverstine_ref_mod);
+    AwareExe.root_module.addImport("perf",       perf_mod);
 
     b.installArtifact(AwareExe);
 }

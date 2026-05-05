@@ -62,3 +62,44 @@ test "estimate" {
     estimateCPUFreq(10);
 }
 
+const profile_frame = struct {
+    var pos: std.builtin.SourceLocation = 0;
+    var hit_count: u64 = 0;
+    var total_cpu_time: u64 = 0;
+    var relative_cpu_time: u64 = 0;
+};
+
+// The actual runtime registry
+const profile_registry = struct {
+    const start_of_time = rdtsc();
+    var id_counter: usize = 0;
+    var profile_buckets: [1024]profile_frame = undefined;
+};
+
+
+fn getMeasurementId(comptime src: std.builtin.SourceLocation) usize {
+    // This struct is unique to the line where getMeasurementId is called
+    const Site = struct {
+        var id: ?usize = null;
+    };
+
+    if (Site.id == null) {
+        Site.id = profile_registry.global_id_counter;
+        profile_registry.global_id_counter += 1;
+        // Optional: print or log that ID X belongs to src.file:src.line
+    }
+    
+    return Site.id.?;
+}
+
+pub fn beginMeasure(comptime src: std.builtin.SourceLocation) usize {
+    const id = getMeasurementId(src);
+    profile_buckets[id] += 1;
+    return id;
+}
+
+pub fn endMeasure(id: usize) void {
+    // Use the ID to close the measurement
+    _ = id;
+}
+

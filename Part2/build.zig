@@ -55,11 +55,20 @@ pub fn build(b: *std.Build) void {
         run_cmd.addArgs(args);
     }
 
+      // 1. Add the command line option (Usage: zig build -Dprofile=true)
+    const enable_prof = b.option(bool, "profile", "Enable detailed profiling") orelse false;
+
+    // 2. Create the options module
+    const perf_options = b.addOptions();
+    perf_options.addOption(bool, "enabled", enable_prof);
+
     const perf_mod = b.addModule("perf", .{
         .root_source_file = b.path("perf/root.zig"),
         .target = target,
         .optimize = optimize
     });
+
+    perf_mod.addOptions("perf_config", perf_options);
 
     const perf_test = b.addTest(.{
         .name = "perf-test",

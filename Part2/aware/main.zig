@@ -1,6 +1,6 @@
 const std   = @import("std");
 const Io    = std.Io;
-const json  = @import("json");
+const json  = std.json;
 const haver = @import("haverstine_ref").haverstine_ref;
 const perf  = @import("perf");
 

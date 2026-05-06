@@ -3,6 +3,7 @@ const c = @cImport({
 });
 
 const std = @import("std");
+const config = @import("perf_config");
 
 const print = std.debug.print;
 
@@ -154,26 +155,27 @@ const sample_termination_handler = struct {
     start: u64,
     prev_parent_id: usize,
 
-    pub fn end(self: sample_termination_handler) void {
-        const end_time = rdtsc();
-        const elapsed = end_time - self.start;
+    pub inline fn end(self: sample_termination_handler) void {
+        if (config.enabled) {
+            const end_time = rdtsc();
+            const elapsed = end_time - self.start;
 
-        if (profile_registry.current_parent_id != self.id) {
-            const frame = profile_registry.profile_buckets[self.id];
-            std.debug.panic(
-                "profile nesting violation: trying to close '{s}' but it is not the active frame",
-                .{if (frame.label.len > 0) frame.label else frame.pos.fn_name},
-            );
+            if (profile_registry.current_parent_id != self.id) {
+                const frame = profile_registry.profile_buckets[self.id];
+                std.debug.panic(
+                    "profile nesting violation: trying to close '{s}' but it is not the active frame",
+                    .{if (frame.label.len > 0) frame.label else frame.pos.fn_name},
+                );
+            }
+
+            profile_registry.profile_buckets[self.id].recursion_depth -= 1;
+            const bool_mult = @intFromBool(profile_registry.profile_buckets[self.id].recursion_depth == 0);
+            profile_registry.profile_buckets[self.id].total_cpu_time += elapsed * bool_mult;
+            profile_registry.profile_buckets[self.id].relative_cpu_time             +%= elapsed;
+            profile_registry.profile_buckets[self.prev_parent_id].relative_cpu_time -%= elapsed;
+
+            profile_registry.current_parent_id = self.prev_parent_id;
         }
-
-        profile_registry.profile_buckets[self.id].recursion_depth -= 1;
-        if (profile_registry.profile_buckets[self.id].recursion_depth == 0) {
-            profile_registry.profile_buckets[self.id].total_cpu_time += elapsed;
-        }
-        profile_registry.profile_buckets[self.id].relative_cpu_time             +%= elapsed;
-        profile_registry.profile_buckets[self.prev_parent_id].relative_cpu_time -%= elapsed;
-
-        profile_registry.current_parent_id = self.prev_parent_id;
     }
 };
 
@@ -191,17 +193,21 @@ fn getMeasurementId(comptime src: std.builtin.SourceLocation) usize {
     return Site.id.?;
 }
 
-pub fn beginProfile(comptime src: std.builtin.SourceLocation, comptime label: []const u8) sample_termination_handler {
-    const id = getMeasurementId(src);
-    profile_registry.profile_buckets[id].pos = src;
-    profile_registry.profile_buckets[id].label = label;
-    profile_registry.profile_buckets[id].hit_count += 1;
-    profile_registry.profile_buckets[id].recursion_depth += 1;
+pub inline fn beginProfile(comptime src: std.builtin.SourceLocation, comptime label: []const u8) sample_termination_handler {
+    if (config.enabled) {
+        const id = getMeasurementId(src);
+        profile_registry.profile_buckets[id].pos = src;
+        profile_registry.profile_buckets[id].label = label;
+        profile_registry.profile_buckets[id].hit_count += 1;
+        profile_registry.profile_buckets[id].recursion_depth += 1;
 
-    const prev_parent_id = profile_registry.current_parent_id;
-    profile_registry.current_parent_id = id;
+        const prev_parent_id = profile_registry.current_parent_id;
+        profile_registry.current_parent_id = id;
 
-    return .{ .id = id, .start = rdtsc(), .prev_parent_id = prev_parent_id };
+        return .{ .id = id, .start = rdtsc(), .prev_parent_id = prev_parent_id };
+    }
+
+    return .{ .id = 0, .start = 0, .prev_parent_id = 0 };
 }
 
 pub fn printSamples(cpu_freq: u64) void {

@@ -88,18 +88,18 @@ const overall_label = "Overall CPU time";
 
 const profile_registry = struct {
     var start_of_time: u64 = 0;
-    var id_counter: usize = 0;
+    var id_counter: usize = 1; // slot 0 is the implicit root/session frame
     var profile_buckets: [4096]profile_frame = undefined;
-
-    var relative_stack: [65536]usize = undefined;
-    var current_stack_num: usize = 0;
+    var current_parent_id: usize = 0;
 
     pub fn print_samples(cpu_freq: u64) void {
         const total_time = rdtsc() - profile_registry.start_of_time;
 
+        var relative_check: f64 = 0.0;
+
         var max_name: usize = overall_label.len;
         var max_hits: usize = 1;
-        for (profile_registry.profile_buckets[0..profile_registry.id_counter]) |frame| {
+        for (profile_registry.profile_buckets[1..profile_registry.id_counter]) |frame| {
             if (frame.hit_count == 0) continue;
             const name = if (frame.label.len > 0) frame.label else frame.pos.fn_name;
             if (name.len > max_name) max_name = name.len;
@@ -108,11 +108,12 @@ const profile_registry = struct {
         }
 
         print("\n--- Profile Results ---\n", .{});
-        for (profile_registry.profile_buckets[0..profile_registry.id_counter]) |frame| {
+        for (profile_registry.profile_buckets[1..profile_registry.id_counter]) |frame| {
             if (frame.hit_count == 0) continue;
             const name = if (frame.label.len > 0) frame.label else frame.pos.fn_name;
             const total_pct = @as(f64, @floatFromInt(frame.total_cpu_time)) / @as(f64, @floatFromInt(total_time)) * 100.0;
             const self_pct  = @as(f64, @floatFromInt(frame.relative_cpu_time)) / @as(f64, @floatFromInt(total_time)) * 100.0;
+            relative_check += self_pct;
 
             print("  {s}", .{name});
             printPad(name.len, max_name);
@@ -128,16 +129,22 @@ const profile_registry = struct {
             }
         }
 
+        // Slot 0 is the root frame: relative_cpu_time accumulates via wrapping subtraction,
+        // so total_time +% relative_cpu_time[0] = unaccounted time outside any profiled block.
+        const unaccounted = total_time +% profile_registry.profile_buckets[0].relative_cpu_time;
+        const unaccounted_pct = @as(f64, @floatFromInt(unaccounted)) / @as(f64, @floatFromInt(total_time)) * 100.0;
+        relative_check += unaccounted_pct;
         print("  {s}", .{overall_label});
         printPad(overall_label.len, max_name);
         print(" | ", .{});
-        printPad(0, 6 + max_hits); // fill "hits: NNN" space to align total column
+        printPad(0, 6 + max_hits);
         if (cpu_freq > 0) {
             const overall_ms = @as(f64, @floatFromInt(total_time)) / @as(f64, @floatFromInt(cpu_freq)) * 1000.0;
-            print(" | total: {d:>12.4}ms (100.00%)\n", .{overall_ms});
+            print(" | total: {d:>12.4}ms (100.00%) | self: {d:>6.2}%\n", .{ overall_ms, unaccounted_pct });
         } else {
-            print(" | total: {d:>12} (100.00%)\n", .{total_time});
+            print(" | total: {d:>12} (100.00%) | self: {d:>6.2}%\n", .{ total_time, unaccounted_pct });
         }
+        print(" Relative pct check: {}\n", .{relative_check});
         print("-----------------------\n", .{});
     }
 };
@@ -145,19 +152,17 @@ const profile_registry = struct {
 const sample_termination_handler = struct {
     id: usize,
     start: u64,
-    prev_stack_depth: usize,
+    prev_parent_id: usize,
 
     pub fn end(self: sample_termination_handler) void {
         const end_time = rdtsc();
         const elapsed = end_time - self.start;
 
-        if (profile_registry.current_stack_num == 0 or
-            profile_registry.relative_stack[profile_registry.current_stack_num - 1] != self.id)
-        {
+        if (profile_registry.current_parent_id != self.id) {
             const frame = profile_registry.profile_buckets[self.id];
             std.debug.panic(
-                "profile nesting violation: trying to close '{s}:{d}' but it is not at the top of the stack",
-                .{ frame.pos.fn_name, frame.pos.line },
+                "profile nesting violation: trying to close '{s}' but it is not the active frame",
+                .{if (frame.label.len > 0) frame.label else frame.pos.fn_name},
             );
         }
 
@@ -165,22 +170,10 @@ const sample_termination_handler = struct {
         if (profile_registry.profile_buckets[self.id].recursion_depth == 0) {
             profile_registry.profile_buckets[self.id].total_cpu_time += elapsed;
         }
-        profile_registry.profile_buckets[self.id].relative_cpu_time +%= elapsed;
+        profile_registry.profile_buckets[self.id].relative_cpu_time             +%= elapsed;
+        profile_registry.profile_buckets[self.prev_parent_id].relative_cpu_time -%= elapsed;
 
-        profile_registry.current_stack_num -= 1;
-
-        if (profile_registry.current_stack_num != self.prev_stack_depth) {
-            const frame = profile_registry.profile_buckets[self.id];
-            std.debug.panic(
-                "profile stack depth mismatch on close of '{s}:{d}': expected depth {d}, got {d}",
-                .{ frame.pos.fn_name, frame.pos.line, self.prev_stack_depth, profile_registry.current_stack_num },
-            );
-        }
-
-        if (profile_registry.current_stack_num > 0) {
-            const parent_id = profile_registry.relative_stack[profile_registry.current_stack_num - 1];
-            profile_registry.profile_buckets[parent_id].relative_cpu_time -%= elapsed;
-        }
+        profile_registry.current_parent_id = self.prev_parent_id;
     }
 };
 
@@ -195,10 +188,6 @@ fn getMeasurementId(comptime src: std.builtin.SourceLocation) usize {
         profile_registry.id_counter += 1;
     }
 
-    if (Site.id.? >= 4096) {
-        @panic("max amount of samples is 4096");
-    }
-
     return Site.id.?;
 }
 
@@ -209,11 +198,10 @@ pub fn beginProfile(comptime src: std.builtin.SourceLocation, comptime label: []
     profile_registry.profile_buckets[id].hit_count += 1;
     profile_registry.profile_buckets[id].recursion_depth += 1;
 
-    const prev_depth = profile_registry.current_stack_num;
-    profile_registry.relative_stack[profile_registry.current_stack_num] = id;
-    profile_registry.current_stack_num += 1;
+    const prev_parent_id = profile_registry.current_parent_id;
+    profile_registry.current_parent_id = id;
 
-    return .{ .id = id, .start = rdtsc(), .prev_stack_depth = prev_depth };
+    return .{ .id = id, .start = rdtsc(), .prev_parent_id = prev_parent_id };
 }
 
 pub fn printSamples(cpu_freq: u64) void {
@@ -227,7 +215,7 @@ pub fn startProfileSession() void {
         bucket.relative_cpu_time = 0;
         bucket.recursion_depth   = 0;
     }
-    profile_registry.current_stack_num = 0;
+    profile_registry.current_parent_id = 0;
     profile_registry.start_of_time = rdtsc();
 }
 

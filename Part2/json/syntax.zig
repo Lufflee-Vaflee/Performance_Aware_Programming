@@ -228,6 +228,7 @@ pub fn parse_number(tokens: []const Token) ParseResult {
 
     const fmt_int = perf.beginProfile(@src(), "just fmt int");
     if (std.fmt.parseInt(i64, tokens[0].NUMBER, 10)) |value| {
+        fmt_int.end();
         return .{ .val = .{.integer = value }, .tokens = tokens[1..] };
     } else |_| {}
     fmt_int.end();

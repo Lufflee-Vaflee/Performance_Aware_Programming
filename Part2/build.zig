@@ -75,6 +75,9 @@ pub fn build(b: *std.Build) void {
 
     perf_mod.link_libc = true;
 
+    json_mod.addImport("perf", perf_mod);
+    json_mod.link_libc = true;
+
     const AwareExe = b.addExecutable(.{
         .name = "aware",
         .use_llvm = true,

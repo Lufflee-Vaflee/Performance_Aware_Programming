@@ -1,4 +1,5 @@
 const std = @import("std");
+const perf = @import("perf");
 const tokenize_mod = @import("tokenize.zig");
 const syntax_mod = @import("syntax.zig");
 
@@ -10,10 +11,15 @@ pub const deinit_json = syntax_mod.deinit_json;
 pub const Value = syntax_mod.Value;
 
 pub fn parse(al: std.mem.Allocator, src: []const u8) !Json {
+    const s_tok = perf.beginProfile(@src(), "json tokenize");
     const tokens = try tokenize(al, src);
+    s_tok.end();
     defer al.free(tokens);
 
-    return try parse_syntax(al, tokens);
+    const s_syn = perf.beginProfile(@src(), "json parse syntax");
+    const result = try parse_syntax(al, tokens);
+    s_syn.end();
+    return result;
 }
 
 test {

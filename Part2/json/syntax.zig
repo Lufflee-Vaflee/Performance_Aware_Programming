@@ -1,6 +1,8 @@
 const std           = @import("std");
 const tokenize_mod  = @import("tokenize.zig");
 
+const perf = @import("perf");
+
 const Token = tokenize_mod.Token;
 const deinit_tokenize = tokenize_mod.deinit_tokenize;
 
@@ -214,6 +216,8 @@ pub fn parse_array(al: std.mem.Allocator, tokens: []const Token, root: *Json) Pa
 }
 
 pub fn parse_number(tokens: []const Token) ParseResult {
+    const parse_number_all = perf.beginProfile(@src(), "parse_number");
+    defer parse_number_all.end();
     if (tokens.len == 0) {
         return Errors.incorrect_value_token;
     }
@@ -222,11 +226,15 @@ pub fn parse_number(tokens: []const Token) ParseResult {
         return Errors.incorrect_value_token;
     }
 
+    const fmt_int = perf.beginProfile(@src(), "just fmt int");
     if (std.fmt.parseInt(i64, tokens[0].NUMBER, 10)) |value| {
         return .{ .val = .{.integer = value }, .tokens = tokens[1..] };
     } else |_| {}
+    fmt_int.end();
 
+    const fmt_float = perf.beginProfile(@src(), "just fmt float");
     const res_float = try std.fmt.parseFloat(f64, tokens[0].NUMBER);
+    fmt_float.end();
 
     return .{ .val = .{ .float = res_float }, .tokens = tokens[1..] };
 }
@@ -260,6 +268,8 @@ pub fn index_plain_object(al: std.mem.Allocator, root: *Json, plain: Object_plai
 }
 
 pub fn append_key(al: std.mem.Allocator, keys: *std.ArrayList([]const u8), token: Token) !usize {
+    const append_key_pr = perf.beginProfile(@src(), "append plain key");
+    defer append_key_pr.end();
     if (token != .STR) {
         return Errors.incorrect_value_token;
     }
@@ -304,6 +314,8 @@ pub fn append_value(al: std.mem.Allocator, values: *std.ArrayList(Value), tokens
 }
 
 pub fn parse_plain(al: std.mem.Allocator, tokens: []const Token, root: *Json) ParseResultPlain {
+    const s_plain = perf.beginProfile(@src(), "parse plain json object");
+    defer s_plain.end();
     var tokens_temp = tokens[1..];
     var object_plain: Object_plain = .{ .keys = .empty, .values = .empty };
     errdefer deinit_plain(al, object_plain);
@@ -352,6 +364,9 @@ pub fn parse_plain(al: std.mem.Allocator, tokens: []const Token, root: *Json) Pa
 }
 
 pub fn parse_indexed(al: std.mem.Allocator, tokens: []const Token, root: *Json, plain: Object_plain) ParseResultIndexed {
+    const s_indexed = perf.beginProfile(@src(), "parse plain json object");
+    defer s_indexed.end();
+
     var tokens_temp = tokens;
     const id = root.postfix_count;
     defer root.postfix_count += 1;

@@ -1,5 +1,5 @@
 const std = @import("std");
-const perf = @import("perf");
+const perf = @import("perf").profiler;
 const tokenize_mod = @import("tokenize.zig");
 const syntax_mod = @import("syntax.zig");
 
@@ -27,12 +27,3 @@ test {
     _ = @import("syntax_test.zig");
 }
 
-test "shit" {
-    const gpa = std.testing.allocator;
-    const result = try parse(gpa, "{\"shit\": \"some\"}");
-    defer deinit_json(gpa, result);
-    var Object = result.value.Object;
-    _ = try Object.put(gpa, "govno", .{ .boolean = false });
-    _ = try Object.get("shit");
-    _ = try Object.get("govno");
-}

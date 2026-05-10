@@ -1,7 +1,7 @@
 const std           = @import("std");
 const tokenize_mod  = @import("tokenize.zig");
 
-const perf = @import("perf");
+const perf = @import("perf").profiler;
 
 const Token = tokenize_mod.Token;
 const deinit_tokenize = tokenize_mod.deinit_tokenize;

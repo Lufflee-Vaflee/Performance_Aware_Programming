@@ -2,7 +2,7 @@ const std   = @import("std");
 const Io    = std.Io;
 const json  = @import("json");
 const haver = @import("haverstine_ref").haverstine_ref;
-const perf  = @import("perf");
+const perf  = @import("perf").profiler;
 
 fn to_f64(v: json.Value) f64 {
     return switch (v) {

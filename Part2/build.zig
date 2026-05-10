@@ -70,9 +70,20 @@ pub fn build(b: *std.Build) void {
 
     perf_mod.addOptions("perf_config", perf_options);
 
+    const perf_test_options = b.addOptions();
+    perf_test_options.addOption(bool, "enabled", true);
+
+    const perf_test_mod = b.addModule("perf-test-mod", .{
+        .root_source_file = b.path("perf/root.zig"),
+        .target = target,
+        .optimize = optimize,
+        .link_libc = true,
+    });
+    perf_test_mod.addOptions("perf_config", perf_test_options);
+
     const perf_test = b.addTest(.{
         .name = "perf-test",
-        .root_module = perf_mod,
+        .root_module = perf_test_mod,
         .use_llvm = true,
     });
 
@@ -102,4 +113,27 @@ pub fn build(b: *std.Build) void {
     AwareExe.root_module.addImport("perf",       perf_mod);
 
     b.installArtifact(AwareExe);
+
+    const read_test_perf_options = b.addOptions();
+    read_test_perf_options.addOption(bool, "enabled", true);
+
+    const read_test_perf_mod = b.addModule("perf-read-test", .{
+        .root_source_file = b.path("perf/root.zig"),
+        .target = target,
+        .optimize = optimize,
+        .link_libc = true,
+    });
+    read_test_perf_mod.addOptions("perf_config", read_test_perf_options);
+
+    const ReadTestExe = b.addExecutable(.{
+        .name = "read_test",
+        .use_llvm = true,
+        .root_module = b.createModule(.{
+            .root_source_file = b.path("aware/read_test.zig"),
+            .target = target,
+            .optimize = optimize,
+        }),
+    });
+    ReadTestExe.root_module.addImport("perf", read_test_perf_mod);
+    b.installArtifact(ReadTestExe);
 }

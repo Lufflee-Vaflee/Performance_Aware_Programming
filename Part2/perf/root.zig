@@ -70,6 +70,7 @@ pub const profile_frame = struct {
     total_cpu_time: u64 = 0,
     relative_cpu_time: u64 = 0,
     recursion_depth: u64 = 0,
+    process_byte_count: usize = 0
 };
 
 fn countDigits(n: u64) usize {
@@ -111,9 +112,17 @@ const profile_registry = struct {
         print("\n--- Profile Results ---\n", .{});
         for (profile_registry.profile_buckets[1..profile_registry.id_counter]) |frame| {
             if (frame.hit_count == 0) continue;
+            const total_s  = @as(f64, @floatFromInt(frame.total_cpu_time)) / @as(f64, @floatFromInt(cpu_freq + 1));
+            const total_ms = total_s * 1000;
+
+            const relative_s = @as(f64, @floatFromInt(frame.relative_cpu_time)) / @as(f64, @floatFromInt(cpu_freq + 1));
+            const relative_ms = relative_s * 1000;
+
             const name = if (frame.label.len > 0) frame.label else frame.pos.fn_name;
             const total_pct = @as(f64, @floatFromInt(frame.total_cpu_time)) / @as(f64, @floatFromInt(total_time)) * 100.0;
             const self_pct  = @as(f64, @floatFromInt(frame.relative_cpu_time)) / @as(f64, @floatFromInt(total_time)) * 100.0;
+            const MB        = @as(f64, @floatFromInt(frame.process_byte_count)) / (1024 * 1024);
+            const MBPerSec  = MB / total_s;
             relative_check += self_pct;
 
             print("  {s}", .{name});
@@ -122,12 +131,7 @@ const profile_registry = struct {
             printPad(countDigits(frame.hit_count), max_hits);
             print("{d}", .{frame.hit_count});
 
-            if (cpu_freq > 0) {
-                const total_ms = @as(f64, @floatFromInt(frame.total_cpu_time)) / @as(f64, @floatFromInt(cpu_freq)) * 1000.0;
-                print(" | total: {d:>12.4}ms ({d:>6.2}%) | self: {d:>6.2}%\n", .{ total_ms, total_pct, self_pct });
-            } else {
-                print(" | total: {d:>12} ({d:>6.2}%) | self: {d:>6.2}%\n", .{ frame.total_cpu_time, total_pct, self_pct });
-            }
+            print(" | inclusive: {d:>12.4}ms ({d:>6.2}%) | exclusive: {d:>12.4}ms ({d:>6.2}%) | {d:>6.2}MB at {d:>10.4}MB/S |\n", .{ total_ms, total_pct, relative_ms, self_pct, MB, MBPerSec});
         }
 
         // Slot 0 is the root frame: relative_cpu_time accumulates via wrapping subtraction,
@@ -155,7 +159,7 @@ const sample_termination_handler = struct {
     start: u64,
     prev_parent_id: usize,
 
-    pub inline fn end(self: sample_termination_handler) void {
+    pub inline fn end(self: sample_termination_handler, bytes: ?usize) void {
         if (config.enabled) {
             const end_time = rdtsc();
             const elapsed = end_time - self.start;
@@ -169,6 +173,7 @@ const sample_termination_handler = struct {
             }
 
             profile_registry.profile_buckets[self.id].recursion_depth -= 1;
+            profile_registry.profile_buckets[self.id].process_byte_count += bytes orelse 0;
             const bool_mult = @intFromBool(profile_registry.profile_buckets[self.id].recursion_depth == 0);
             profile_registry.profile_buckets[self.id].total_cpu_time += elapsed * bool_mult;
             profile_registry.profile_buckets[self.id].relative_cpu_time             +%= elapsed;
@@ -232,7 +237,7 @@ fn recursive_helper(depth: usize) void {
     const s = beginProfile(@src(), "recursive_helper");
     recursion_test_id = s.id;
     if (depth > 0) recursive_helper(depth - 1);
-    s.end();
+    s.end(null);
 }
 
 test "single sample: hit count=1, time>0, stack clean" {
@@ -241,7 +246,7 @@ test "single sample: hit count=1, time>0, stack clean" {
     var x: u64 = 0;
     for (0..10000) |i| x +%= i;
     std.mem.doNotOptimizeAway(&x);
-    s.end();
+    s.end(null);
 
     const b = profile_registry.profile_buckets[s.id];
     try std.testing.expectEqual(@as(u64, 1), b.hit_count);
@@ -256,7 +261,7 @@ test "repeated calls: hit count accumulates" {
     for (0..7) |_| {
         const s = beginProfile(@src(), "repeated calls test");
         last_id = s.id;
-        s.end();
+        s.end(null);
     }
     try std.testing.expectEqual(@as(u64, 7), profile_registry.profile_buckets[last_id].hit_count);
     try std.testing.expectEqual(@as(usize, 0), profile_registry.current_stack_num);
@@ -272,8 +277,8 @@ test "nested: outer relative < outer total, inner relative == inner total" {
     var y: u64 = 0;
     for (0..10000) |i| y +%= i;
     std.mem.doNotOptimizeAway(&y);
-    inner.end();
-    outer.end();
+    inner.end(null);
+    outer.end(null);
 
     const ob = profile_registry.profile_buckets[outer.id];
     const ib = profile_registry.profile_buckets[inner.id];
@@ -292,13 +297,13 @@ test "sequential profiles: independent, stack clean" {
     var a: u64 = 0;
     for (0..5000) |i| a +%= i;
     std.mem.doNotOptimizeAway(&a);
-    s1.end();
+    s1.end(null);
 
     const s2 = beginProfile(@src(), "sequential test indempendent second");
     var b: u64 = 0;
     for (0..5000) |i| b +%= i;
     std.mem.doNotOptimizeAway(&b);
-    s2.end();
+    s2.end(null);
 
     try std.testing.expectEqual(@as(u64, 1), profile_registry.profile_buckets[s1.id].hit_count);
     try std.testing.expectEqual(@as(u64, 1), profile_registry.profile_buckets[s2.id].hit_count);
@@ -318,7 +323,7 @@ test "recursion: no panic, hit count equals call depth, stack clean" {
 test "startProfileSession clears stats and stack" {
     startProfileSession();
     const s = beginProfile(@src(), "startProfileSession clears test");
-    s.end();
+    s.end(null);
     const id = s.id;
     try std.testing.expect(profile_registry.profile_buckets[id].hit_count > 0);
 

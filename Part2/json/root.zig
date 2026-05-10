@@ -13,12 +13,12 @@ pub const Value = syntax_mod.Value;
 pub fn parse(al: std.mem.Allocator, src: []const u8) !Json {
     const s_tok = perf.beginProfile(@src(), "json tokenize");
     const tokens = try tokenize(al, src);
-    s_tok.end();
+    s_tok.end(null);
     defer al.free(tokens);
 
     const s_syn = perf.beginProfile(@src(), "json parse syntax");
     const result = try parse_syntax(al, tokens);
-    s_syn.end();
+    s_syn.end(null);
     return result;
 }
 

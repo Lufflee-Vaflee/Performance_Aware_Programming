@@ -1,6 +1,6 @@
 const std   = @import("std");
 const Io    = std.Io;
-const json  = std.json;
+const json  = @import("json");
 const haver = @import("haverstine_ref").haverstine_ref;
 const perf  = @import("perf");
 
@@ -25,20 +25,21 @@ pub fn main(init: std.process.Init) !void {
         std.debug.print("Usage: aware <file.json>\n", .{});
         return;
     };
-    s_startup.end();
+    s_startup.end(null);
 
     const s_read = perf.beginProfile(@src(), "Read");
     const file = try Io.Dir.openFile(Io.Dir.cwd(), init.io, filename, .{});
     defer file.close(init.io);
+
     const stat = try file.stat(init.io);
-    var buf: [65536]u8 = undefined;
+    var buf: [524288]u8 = undefined;
     var file_reader = file.reader(init.io, &buf);
     const src = try file_reader.interface.readAlloc(al, stat.size);
-    s_read.end();
+    s_read.end(@intCast(stat.size));
 
     const s_parse = perf.beginProfile(@src(), "Parse");
     var root = try json.parse(al, src);
-    s_parse.end();
+    s_parse.end(@intCast(stat.size));
 
     const s_calc = perf.beginProfile(@src(), "Calculate");
     const pairs = (try root.value.Object.get("pairs")).array;
@@ -54,7 +55,7 @@ pub fn main(init: std.process.Init) !void {
             6372.8,
         );
     }
-    s_calc.end();
+    s_calc.end(pairs.items.len * 4 * 8);
 
     std.debug.print("\nInput size: {d}\n", .{stat.size});
     std.debug.print("Pair count: {d}\n", .{pairs.items.len});
